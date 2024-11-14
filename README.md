@@ -1,5 +1,19 @@
 # XTLS SDK
 
+![GitHub top language](https://img.shields.io/github/languages/top/remnawave/xtls-sdk)
+![GitHub Repo stars](https://img.shields.io/github/stars/remnawave/xtls-sdk)
+
+![npm version](https://img.shields.io/npm/v/@remnawave/xtls-sdk)
+![GitHub Tag](https://img.shields.io/github/v/tag/remnawave/xtls-sdk)
+
+![Build Status](https://img.shields.io/github/actions/workflow/status/remnawave/xtls-sdk/.github/workflows/deploy-lib.yml)
+![Downloads](https://img.shields.io/npm/dt/@remnawave/xtls-sdk)
+![License](https://img.shields.io/npm/l/@remnawave/xtls-sdk)
+![NPM Last Update](https://img.shields.io/npm/last-update/%40remnawave%2Fxtls-sdk)
+
+![Known Vulnerabilities](https://snyk.io/test/github/remnawave/xtls-sdk/badge.svg)
+![Coverage Status](https://img.shields.io/codecov/c/github/remnawave/xtls-sdk)
+
 A TypeScript SDK for interacting with XRAY (XTLS) Core via gRPC API. This package provides a type-safe interface for managing and monitoring your XRAY server, including statistics, user management, and connection information.
 
 ## Features
