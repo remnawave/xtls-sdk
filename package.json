@@ -1,6 +1,6 @@
 {
   "name": "@remnawave/xtls-sdk",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A Typescript SDK for XRAY (XTLS) Core GRPC Api",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -12,6 +12,14 @@
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remnawave/xtls-sdk.git"
+  },
+  "homepage": "https://github.com/remnawave/xtls-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/remnawave/xtls-sdk/issues"
   },
   "author": "Remnawave",
   "license": "MIT",
