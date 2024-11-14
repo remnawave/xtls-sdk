@@ -100,6 +100,56 @@ Main client class for interacting with the XRAY server.
 const api = new XtlsApi(ip: string, port: string);
 ```
 
+### HandlerService
+
+Service for managing inbound handlers and their users.
+
+#### User Management Methods
+
+| Method                                      | Description                      | Parameters                                               |
+| ------------------------------------------- | -------------------------------- | -------------------------------------------------------- |
+| `getInboundUsers(tag: string)`              | Get all users from an inbound    | `tag`: Inbound handler tag                               |
+| `getInboundUsersCount(tag: string)`         | Get count of users in an inbound | `tag`: Inbound handler tag                               |
+| `removeUser(tag: string, username: string)` | Remove a user from an inbound    | `tag`: Inbound handler tag<br>`username`: User to remove |
+
+#### Add User Methods
+
+| Method                                                  | Description               | Parameters                                                       |
+| ------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------- |
+| `addTrojanUser(data: IAddTrojanUser)`                   | Add Trojan user           | `data`: { tag, username, password, level }                       |
+| `addVlessUser(data: IAddVlessUser)`                     | Add VLESS user            | `data`: { tag, username, uuid, flow, level }                     |
+| `addShadowsocksUser(data: IAddShadowsocksUser)`         | Add Shadowsocks user      | `data`: { tag, username, password, cipherType, ivCheck, level }  |
+| `addShadowsocks2022User(data: IAddShadowsocks2022User)` | Add Shadowsocks 2022 user | `data`: { tag, username, key, level }                            |
+| `addSocksUser(data: IAddSocksUser)`                     | Add SOCKS user            | `data`: { tag, username, socks_username, socks_password, level } |
+| `addHttpUser(data: IAddHttpUser)`                       | Add HTTP user             | `data`: { tag, username, http_username, http_password, level }   |
+
+Example usage:
+
+```typescript
+// Get all users in an inbound
+const users = await api.handler.getInboundUsers('main-inbound');
+if (users.isOk) {
+  console.log('Users:', users.data.users);
+}
+
+// Add a new Trojan user
+const newUser = await api.handler.addTrojanUser({
+  tag: 'main-inbound',
+  username: 'user@example.com',
+  password: 'secure-password',
+  level: 0,
+});
+
+// Remove a user
+const removed = await api.handler.removeUser('main-inbound', 'user@example.com');
+
+// Get user count
+const count = await api.handler.getInboundUsersCount('main-inbound');
+if (count.isOk) {
+  console.log('Total users:', count.data);
+}
+```
+
 ### StatsService
 
 Statistics management service.
