@@ -21,7 +21,10 @@
     "tests/**/*",
     "**/*.spec.ts",
     "**/*.test.ts",
-    "src/xray-protos/transport/**/*",
-    "src/xray-protos/core/**/*"
+    "src/xray-protos/transport/**/*.ts",
+    "src/xray-protos/core/**/*.ts",
+    "src/xray-protos/app/router/**/*.ts",
+    "src/xray-protos/app/observatory/**/*.ts",
+    "src/xray-protos/app/dns/**/*.ts"
   ]
 }
