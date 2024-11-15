@@ -1,6 +1,6 @@
 {
   "name": "@remnawave/xtls-sdk",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A Typescript SDK for XRAY (XTLS) Core GRPC Api",
   "main": "build/index.js",
   "types": "build/index.d.ts",
