@@ -44,7 +44,8 @@
     "long": "^5.2.3",
     "nice-grpc": "^2.1.10",
     "protobufjs": "^7.4.0",
-    "tar": "^7.4.3"
+    "tar": "^7.4.3",
+    "@bufbuild/protobuf": "^2.2.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.2",
