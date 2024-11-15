@@ -1,17 +1,27 @@
 {
-    "compilerOptions": {
-      "target": "es2020",
-      "module": "commonjs",
-      "moduleResolution": "node",
-      "outDir": "./build",
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "strict": true,
-      "strictPropertyInitialization": false,
-      "skipLibCheck": true,
-      "noEmit": false,
-      "lib": ["es2020"],
-      "declaration": true,
-      "declarationMap": true
-    }
-  }
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./build",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "lib": [
+      "es2020"
+    ],
+    "declaration": true,
+    "declarationMap": true,
+  },
+  "exclude": [
+    "scripts/**/*",
+    "tests/**/*",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "src/xray-protos/transport/**/*",
+    "src/xray-protos/core/**/*"
+  ]
+}
