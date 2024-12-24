@@ -12,6 +12,8 @@ export const protobufPackage = "xray.common.net";
 
 export enum Network {
   Unknown = 0,
+  /** @deprecated */
+  RawTCP = 1,
   TCP = 2,
   UDP = 3,
   UNIX = 4,
@@ -23,6 +25,9 @@ export function networkFromJSON(object: any): Network {
     case 0:
     case "Unknown":
       return Network.Unknown;
+    case 1:
+    case "RawTCP":
+      return Network.RawTCP;
     case 2:
     case "TCP":
       return Network.TCP;
@@ -43,6 +48,8 @@ export function networkToJSON(object: Network): string {
   switch (object) {
     case Network.Unknown:
       return "Unknown";
+    case Network.RawTCP:
+      return "RawTCP";
     case Network.TCP:
       return "TCP";
     case Network.UDP:

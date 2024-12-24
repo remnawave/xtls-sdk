@@ -6,9 +6,8 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Network, networkFromJSON, networkToJSON } from "../../common/net/network";
-import { PortList } from "../../common/net/port";
-import { TypedMessage } from "../../common/serial/typed_message";
+import { Network, networkFromJSON, NetworkList, networkToJSON } from "../../common/net/network";
+import { PortList, PortRange } from "../../common/net/port";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.app.router";
@@ -120,10 +119,18 @@ export interface RoutingRule {
     | string
     | undefined;
   /** Tag of routing balancer. */
-  balancingTag?: string | undefined;
-  ruleTag: string;
+  balancingTag?:
+    | string
+    | undefined;
   /** List of domains for target domain matching. */
   domain: Domain[];
+  /**
+   * List of CIDRs for target IP address matching.
+   * Deprecated. Use geoip below.
+   *
+   * @deprecated
+   */
+  cidr: CIDR[];
   /**
    * List of GeoIPs for target IP address matching. If this entry exists, the
    * cidr above will have no effect. GeoIP fields with the same country code are
@@ -131,12 +138,35 @@ export interface RoutingRule {
    * runtime. For customized GeoIPs, please leave country code empty.
    */
   geoip: GeoIP[];
+  /**
+   * A range of port [from, to]. If the destination port is in this range, this
+   * rule takes effect. Deprecated. Use port_list.
+   *
+   * @deprecated
+   */
+  portRange:
+    | PortRange
+    | undefined;
   /** List of ports. */
   portList:
     | PortList
     | undefined;
+  /**
+   * List of networks. Deprecated. Use networks.
+   *
+   * @deprecated
+   */
+  networkList:
+    | NetworkList
+    | undefined;
   /** List of networks for matching. */
   networks: Network[];
+  /**
+   * List of CIDRs for source IP address matching.
+   *
+   * @deprecated
+   */
+  sourceCidr: CIDR[];
   /**
    * List of GeoIPs for source IP address matching. If this entry exists, the
    * source_cidr above will have no effect.
@@ -162,29 +192,6 @@ export interface BalancingRule {
   tag: string;
   outboundSelector: string[];
   strategy: string;
-  strategySettings: TypedMessage | undefined;
-  fallbackTag: string;
-}
-
-export interface StrategyWeight {
-  $type: "xray.app.router.StrategyWeight";
-  regexp: boolean;
-  match: string;
-  value: number;
-}
-
-export interface StrategyLeastLoadConfig {
-  $type: "xray.app.router.StrategyLeastLoadConfig";
-  /** weight settings */
-  costs: StrategyWeight[];
-  /** RTT baselines for selecting, int64 values of time.Duration */
-  baselines: number[];
-  /** expected nodes count to select */
-  expected: number;
-  /** max acceptable rtt, filter away high delay nodes. default 0 */
-  maxRTT: number;
-  /** acceptable failure rate */
-  tolerance: number;
 }
 
 export interface Config {
@@ -833,11 +840,14 @@ function createBaseRoutingRule(): RoutingRule {
     $type: "xray.app.router.RoutingRule",
     tag: undefined,
     balancingTag: undefined,
-    ruleTag: "",
     domain: [],
+    cidr: [],
     geoip: [],
+    portRange: undefined,
     portList: undefined,
+    networkList: undefined,
     networks: [],
+    sourceCidr: [],
     sourceGeoip: [],
     sourcePortList: undefined,
     userEmail: [],
@@ -858,23 +868,32 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     if (message.balancingTag !== undefined) {
       writer.uint32(98).string(message.balancingTag);
     }
-    if (message.ruleTag !== "") {
-      writer.uint32(146).string(message.ruleTag);
-    }
     for (const v of message.domain) {
       Domain.encode(v!, writer.uint32(18).fork()).join();
+    }
+    for (const v of message.cidr) {
+      CIDR.encode(v!, writer.uint32(26).fork()).join();
     }
     for (const v of message.geoip) {
       GeoIP.encode(v!, writer.uint32(82).fork()).join();
     }
+    if (message.portRange !== undefined) {
+      PortRange.encode(message.portRange, writer.uint32(34).fork()).join();
+    }
     if (message.portList !== undefined) {
       PortList.encode(message.portList, writer.uint32(114).fork()).join();
+    }
+    if (message.networkList !== undefined) {
+      NetworkList.encode(message.networkList, writer.uint32(42).fork()).join();
     }
     writer.uint32(106).fork();
     for (const v of message.networks) {
       writer.int32(v);
     }
     writer.join();
+    for (const v of message.sourceCidr) {
+      CIDR.encode(v!, writer.uint32(50).fork()).join();
+    }
     for (const v of message.sourceGeoip) {
       GeoIP.encode(v!, writer.uint32(90).fork()).join();
     }
@@ -926,20 +945,20 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           message.balancingTag = reader.string();
           continue;
         }
-        case 18: {
-          if (tag !== 146) {
-            break;
-          }
-
-          message.ruleTag = reader.string();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
           }
 
           message.domain.push(Domain.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.cidr.push(CIDR.decode(reader, reader.uint32()));
           continue;
         }
         case 10: {
@@ -950,12 +969,28 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           message.geoip.push(GeoIP.decode(reader, reader.uint32()));
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.portRange = PortRange.decode(reader, reader.uint32());
+          continue;
+        }
         case 14: {
           if (tag !== 114) {
             break;
           }
 
           message.portList = PortList.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.networkList = NetworkList.decode(reader, reader.uint32());
           continue;
         }
         case 13: {
@@ -975,6 +1010,14 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           }
 
           break;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sourceCidr.push(CIDR.decode(reader, reader.uint32()));
+          continue;
         }
         case 11: {
           if (tag !== 90) {
@@ -1049,11 +1092,16 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       $type: RoutingRule.$type,
       tag: isSet(object.tag) ? globalThis.String(object.tag) : undefined,
       balancingTag: isSet(object.balancingTag) ? globalThis.String(object.balancingTag) : undefined,
-      ruleTag: isSet(object.ruleTag) ? globalThis.String(object.ruleTag) : "",
       domain: globalThis.Array.isArray(object?.domain) ? object.domain.map((e: any) => Domain.fromJSON(e)) : [],
+      cidr: globalThis.Array.isArray(object?.cidr) ? object.cidr.map((e: any) => CIDR.fromJSON(e)) : [],
       geoip: globalThis.Array.isArray(object?.geoip) ? object.geoip.map((e: any) => GeoIP.fromJSON(e)) : [],
+      portRange: isSet(object.portRange) ? PortRange.fromJSON(object.portRange) : undefined,
       portList: isSet(object.portList) ? PortList.fromJSON(object.portList) : undefined,
+      networkList: isSet(object.networkList) ? NetworkList.fromJSON(object.networkList) : undefined,
       networks: globalThis.Array.isArray(object?.networks) ? object.networks.map((e: any) => networkFromJSON(e)) : [],
+      sourceCidr: globalThis.Array.isArray(object?.sourceCidr)
+        ? object.sourceCidr.map((e: any) => CIDR.fromJSON(e))
+        : [],
       sourceGeoip: globalThis.Array.isArray(object?.sourceGeoip)
         ? object.sourceGeoip.map((e: any) => GeoIP.fromJSON(e))
         : [],
@@ -1083,20 +1131,29 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     if (message.balancingTag !== undefined) {
       obj.balancingTag = message.balancingTag;
     }
-    if (message.ruleTag !== "") {
-      obj.ruleTag = message.ruleTag;
-    }
     if (message.domain?.length) {
       obj.domain = message.domain.map((e) => Domain.toJSON(e));
+    }
+    if (message.cidr?.length) {
+      obj.cidr = message.cidr.map((e) => CIDR.toJSON(e));
     }
     if (message.geoip?.length) {
       obj.geoip = message.geoip.map((e) => GeoIP.toJSON(e));
     }
+    if (message.portRange !== undefined) {
+      obj.portRange = PortRange.toJSON(message.portRange);
+    }
     if (message.portList !== undefined) {
       obj.portList = PortList.toJSON(message.portList);
     }
+    if (message.networkList !== undefined) {
+      obj.networkList = NetworkList.toJSON(message.networkList);
+    }
     if (message.networks?.length) {
       obj.networks = message.networks.map((e) => networkToJSON(e));
+    }
+    if (message.sourceCidr?.length) {
+      obj.sourceCidr = message.sourceCidr.map((e) => CIDR.toJSON(e));
     }
     if (message.sourceGeoip?.length) {
       obj.sourceGeoip = message.sourceGeoip.map((e) => GeoIP.toJSON(e));
@@ -1135,13 +1192,20 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     const message = createBaseRoutingRule();
     message.tag = object.tag ?? undefined;
     message.balancingTag = object.balancingTag ?? undefined;
-    message.ruleTag = object.ruleTag ?? "";
     message.domain = object.domain?.map((e) => Domain.fromPartial(e)) || [];
+    message.cidr = object.cidr?.map((e) => CIDR.fromPartial(e)) || [];
     message.geoip = object.geoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.portRange = (object.portRange !== undefined && object.portRange !== null)
+      ? PortRange.fromPartial(object.portRange)
+      : undefined;
     message.portList = (object.portList !== undefined && object.portList !== null)
       ? PortList.fromPartial(object.portList)
       : undefined;
+    message.networkList = (object.networkList !== undefined && object.networkList !== null)
+      ? NetworkList.fromPartial(object.networkList)
+      : undefined;
     message.networks = object.networks?.map((e) => e) || [];
+    message.sourceCidr = object.sourceCidr?.map((e) => CIDR.fromPartial(e)) || [];
     message.sourceGeoip = object.sourceGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
     message.sourcePortList = (object.sourcePortList !== undefined && object.sourcePortList !== null)
       ? PortList.fromPartial(object.sourcePortList)
@@ -1250,14 +1314,7 @@ export const RoutingRule_AttributesEntry: MessageFns<
 messageTypeRegistry.set(RoutingRule_AttributesEntry.$type, RoutingRule_AttributesEntry);
 
 function createBaseBalancingRule(): BalancingRule {
-  return {
-    $type: "xray.app.router.BalancingRule",
-    tag: "",
-    outboundSelector: [],
-    strategy: "",
-    strategySettings: undefined,
-    fallbackTag: "",
-  };
+  return { $type: "xray.app.router.BalancingRule", tag: "", outboundSelector: [], strategy: "" };
 }
 
 export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.BalancingRule"> = {
@@ -1272,12 +1329,6 @@ export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.Balancing
     }
     if (message.strategy !== "") {
       writer.uint32(26).string(message.strategy);
-    }
-    if (message.strategySettings !== undefined) {
-      TypedMessage.encode(message.strategySettings, writer.uint32(34).fork()).join();
-    }
-    if (message.fallbackTag !== "") {
-      writer.uint32(42).string(message.fallbackTag);
     }
     return writer;
   },
@@ -1313,22 +1364,6 @@ export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.Balancing
           message.strategy = reader.string();
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.strategySettings = TypedMessage.decode(reader, reader.uint32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.fallbackTag = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1346,8 +1381,6 @@ export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.Balancing
         ? object.outboundSelector.map((e: any) => globalThis.String(e))
         : [],
       strategy: isSet(object.strategy) ? globalThis.String(object.strategy) : "",
-      strategySettings: isSet(object.strategySettings) ? TypedMessage.fromJSON(object.strategySettings) : undefined,
-      fallbackTag: isSet(object.fallbackTag) ? globalThis.String(object.fallbackTag) : "",
     };
   },
 
@@ -1362,12 +1395,6 @@ export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.Balancing
     if (message.strategy !== "") {
       obj.strategy = message.strategy;
     }
-    if (message.strategySettings !== undefined) {
-      obj.strategySettings = TypedMessage.toJSON(message.strategySettings);
-    }
-    if (message.fallbackTag !== "") {
-      obj.fallbackTag = message.fallbackTag;
-    }
     return obj;
   },
 
@@ -1379,262 +1406,11 @@ export const BalancingRule: MessageFns<BalancingRule, "xray.app.router.Balancing
     message.tag = object.tag ?? "";
     message.outboundSelector = object.outboundSelector?.map((e) => e) || [];
     message.strategy = object.strategy ?? "";
-    message.strategySettings = (object.strategySettings !== undefined && object.strategySettings !== null)
-      ? TypedMessage.fromPartial(object.strategySettings)
-      : undefined;
-    message.fallbackTag = object.fallbackTag ?? "";
     return message;
   },
 };
 
 messageTypeRegistry.set(BalancingRule.$type, BalancingRule);
-
-function createBaseStrategyWeight(): StrategyWeight {
-  return { $type: "xray.app.router.StrategyWeight", regexp: false, match: "", value: 0 };
-}
-
-export const StrategyWeight: MessageFns<StrategyWeight, "xray.app.router.StrategyWeight"> = {
-  $type: "xray.app.router.StrategyWeight" as const,
-
-  encode(message: StrategyWeight, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.regexp !== false) {
-      writer.uint32(8).bool(message.regexp);
-    }
-    if (message.match !== "") {
-      writer.uint32(18).string(message.match);
-    }
-    if (message.value !== 0) {
-      writer.uint32(29).float(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): StrategyWeight {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseStrategyWeight();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.regexp = reader.bool();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.match = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 29) {
-            break;
-          }
-
-          message.value = reader.float();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): StrategyWeight {
-    return {
-      $type: StrategyWeight.$type,
-      regexp: isSet(object.regexp) ? globalThis.Boolean(object.regexp) : false,
-      match: isSet(object.match) ? globalThis.String(object.match) : "",
-      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
-    };
-  },
-
-  toJSON(message: StrategyWeight): unknown {
-    const obj: any = {};
-    if (message.regexp !== false) {
-      obj.regexp = message.regexp;
-    }
-    if (message.match !== "") {
-      obj.match = message.match;
-    }
-    if (message.value !== 0) {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<StrategyWeight>): StrategyWeight {
-    return StrategyWeight.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<StrategyWeight>): StrategyWeight {
-    const message = createBaseStrategyWeight();
-    message.regexp = object.regexp ?? false;
-    message.match = object.match ?? "";
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(StrategyWeight.$type, StrategyWeight);
-
-function createBaseStrategyLeastLoadConfig(): StrategyLeastLoadConfig {
-  return {
-    $type: "xray.app.router.StrategyLeastLoadConfig",
-    costs: [],
-    baselines: [],
-    expected: 0,
-    maxRTT: 0,
-    tolerance: 0,
-  };
-}
-
-export const StrategyLeastLoadConfig: MessageFns<StrategyLeastLoadConfig, "xray.app.router.StrategyLeastLoadConfig"> = {
-  $type: "xray.app.router.StrategyLeastLoadConfig" as const,
-
-  encode(message: StrategyLeastLoadConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.costs) {
-      StrategyWeight.encode(v!, writer.uint32(18).fork()).join();
-    }
-    writer.uint32(26).fork();
-    for (const v of message.baselines) {
-      writer.int64(v);
-    }
-    writer.join();
-    if (message.expected !== 0) {
-      writer.uint32(32).int32(message.expected);
-    }
-    if (message.maxRTT !== 0) {
-      writer.uint32(40).int64(message.maxRTT);
-    }
-    if (message.tolerance !== 0) {
-      writer.uint32(53).float(message.tolerance);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): StrategyLeastLoadConfig {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseStrategyLeastLoadConfig();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.costs.push(StrategyWeight.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 3: {
-          if (tag === 24) {
-            message.baselines.push(longToNumber(reader.int64()));
-
-            continue;
-          }
-
-          if (tag === 26) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.baselines.push(longToNumber(reader.int64()));
-            }
-
-            continue;
-          }
-
-          break;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.expected = reader.int32();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.maxRTT = longToNumber(reader.int64());
-          continue;
-        }
-        case 6: {
-          if (tag !== 53) {
-            break;
-          }
-
-          message.tolerance = reader.float();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): StrategyLeastLoadConfig {
-    return {
-      $type: StrategyLeastLoadConfig.$type,
-      costs: globalThis.Array.isArray(object?.costs) ? object.costs.map((e: any) => StrategyWeight.fromJSON(e)) : [],
-      baselines: globalThis.Array.isArray(object?.baselines)
-        ? object.baselines.map((e: any) => globalThis.Number(e))
-        : [],
-      expected: isSet(object.expected) ? globalThis.Number(object.expected) : 0,
-      maxRTT: isSet(object.maxRTT) ? globalThis.Number(object.maxRTT) : 0,
-      tolerance: isSet(object.tolerance) ? globalThis.Number(object.tolerance) : 0,
-    };
-  },
-
-  toJSON(message: StrategyLeastLoadConfig): unknown {
-    const obj: any = {};
-    if (message.costs?.length) {
-      obj.costs = message.costs.map((e) => StrategyWeight.toJSON(e));
-    }
-    if (message.baselines?.length) {
-      obj.baselines = message.baselines.map((e) => Math.round(e));
-    }
-    if (message.expected !== 0) {
-      obj.expected = Math.round(message.expected);
-    }
-    if (message.maxRTT !== 0) {
-      obj.maxRTT = Math.round(message.maxRTT);
-    }
-    if (message.tolerance !== 0) {
-      obj.tolerance = message.tolerance;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<StrategyLeastLoadConfig>): StrategyLeastLoadConfig {
-    return StrategyLeastLoadConfig.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<StrategyLeastLoadConfig>): StrategyLeastLoadConfig {
-    const message = createBaseStrategyLeastLoadConfig();
-    message.costs = object.costs?.map((e) => StrategyWeight.fromPartial(e)) || [];
-    message.baselines = object.baselines?.map((e) => e) || [];
-    message.expected = object.expected ?? 0;
-    message.maxRTT = object.maxRTT ?? 0;
-    message.tolerance = object.tolerance ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(StrategyLeastLoadConfig.$type, StrategyLeastLoadConfig);
 
 function createBaseConfig(): Config {
   return { $type: "xray.app.router.Config", domainStrategy: 0, rule: [], balancingRule: [] };

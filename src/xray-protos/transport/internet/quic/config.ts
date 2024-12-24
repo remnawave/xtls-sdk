@@ -2,42 +2,39 @@
 // versions:
 //   protoc-gen-ts_proto  v2.2.7
 //   protoc               v5.28.3
-// source: proxy/dns/config.proto
+// source: transport/internet/quic/config.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Endpoint } from "../../common/net/destination";
-import { messageTypeRegistry } from "../../typeRegistry";
+import { SecurityConfig } from "../../../common/protocol/headers";
+import { TypedMessage } from "../../../common/serial/typed_message";
+import { messageTypeRegistry } from "../../../typeRegistry";
 
-export const protobufPackage = "xray.proxy.dns";
+export const protobufPackage = "xray.transport.internet.quic";
 
 export interface Config {
-  $type: "xray.proxy.dns.Config";
-  /**
-   * Server is the DNS server address. If specified, this address overrides the
-   * original one.
-   */
-  server: Endpoint | undefined;
-  userLevel: number;
-  nonIPQuery: string;
+  $type: "xray.transport.internet.quic.Config";
+  key: string;
+  security: SecurityConfig | undefined;
+  header: TypedMessage | undefined;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.dns.Config", server: undefined, userLevel: 0, nonIPQuery: "" };
+  return { $type: "xray.transport.internet.quic.Config", key: "", security: undefined, header: undefined };
 }
 
-export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
-  $type: "xray.proxy.dns.Config" as const,
+export const Config: MessageFns<Config, "xray.transport.internet.quic.Config"> = {
+  $type: "xray.transport.internet.quic.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.server !== undefined) {
-      Endpoint.encode(message.server, writer.uint32(10).fork()).join();
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
     }
-    if (message.userLevel !== 0) {
-      writer.uint32(16).uint32(message.userLevel);
+    if (message.security !== undefined) {
+      SecurityConfig.encode(message.security, writer.uint32(18).fork()).join();
     }
-    if (message.nonIPQuery !== "") {
-      writer.uint32(26).string(message.nonIPQuery);
+    if (message.header !== undefined) {
+      TypedMessage.encode(message.header, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -54,15 +51,15 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.server = Endpoint.decode(reader, reader.uint32());
+          message.key = reader.string();
           continue;
         }
         case 2: {
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.userLevel = reader.uint32();
+          message.security = SecurityConfig.decode(reader, reader.uint32());
           continue;
         }
         case 3: {
@@ -70,7 +67,7 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.nonIPQuery = reader.string();
+          message.header = TypedMessage.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -85,22 +82,22 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      server: isSet(object.server) ? Endpoint.fromJSON(object.server) : undefined,
-      userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
-      nonIPQuery: isSet(object.nonIPQuery) ? globalThis.String(object.nonIPQuery) : "",
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      security: isSet(object.security) ? SecurityConfig.fromJSON(object.security) : undefined,
+      header: isSet(object.header) ? TypedMessage.fromJSON(object.header) : undefined,
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.server !== undefined) {
-      obj.server = Endpoint.toJSON(message.server);
+    if (message.key !== "") {
+      obj.key = message.key;
     }
-    if (message.userLevel !== 0) {
-      obj.userLevel = Math.round(message.userLevel);
+    if (message.security !== undefined) {
+      obj.security = SecurityConfig.toJSON(message.security);
     }
-    if (message.nonIPQuery !== "") {
-      obj.nonIPQuery = message.nonIPQuery;
+    if (message.header !== undefined) {
+      obj.header = TypedMessage.toJSON(message.header);
     }
     return obj;
   },
@@ -110,11 +107,13 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.server = (object.server !== undefined && object.server !== null)
-      ? Endpoint.fromPartial(object.server)
+    message.key = object.key ?? "";
+    message.security = (object.security !== undefined && object.security !== null)
+      ? SecurityConfig.fromPartial(object.security)
       : undefined;
-    message.userLevel = object.userLevel ?? 0;
-    message.nonIPQuery = object.nonIPQuery ?? "";
+    message.header = (object.header !== undefined && object.header !== null)
+      ? TypedMessage.fromPartial(object.header)
+      : undefined;
     return message;
   },
 };

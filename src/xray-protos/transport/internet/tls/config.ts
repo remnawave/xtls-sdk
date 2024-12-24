@@ -24,7 +24,6 @@ export interface Certificate {
   keyPath: string;
   /** If true, one-Time Loading */
   OneTimeLoading: boolean;
-  buildChain: boolean;
 }
 
 export enum Certificate_Usage {
@@ -89,6 +88,8 @@ export interface Config {
   maxVersion: string;
   /** Specify cipher suites, except for TLS 1.3. */
   cipherSuites: string;
+  /** Whether the server selects its most preferred ciphersuite. */
+  preferServerCipherSuites: boolean;
   /** TLS Client Hello fingerprint (uTLS). */
   fingerprint: string;
   rejectUnknownSni: boolean;
@@ -106,9 +107,6 @@ export interface Config {
    * @Critical
    */
   pinnedPeerCertificatePublicKeySha256: Uint8Array[];
-  masterKeyLog: string;
-  /** Lists of string as CurvePreferences values. */
-  curvePreferences: string[];
 }
 
 function createBaseCertificate(): Certificate {
@@ -121,7 +119,6 @@ function createBaseCertificate(): Certificate {
     certificatePath: "",
     keyPath: "",
     OneTimeLoading: false,
-    buildChain: false,
   };
 }
 
@@ -149,9 +146,6 @@ export const Certificate: MessageFns<Certificate, "xray.transport.internet.tls.C
     }
     if (message.OneTimeLoading !== false) {
       writer.uint32(56).bool(message.OneTimeLoading);
-    }
-    if (message.buildChain !== false) {
-      writer.uint32(64).bool(message.buildChain);
     }
     return writer;
   },
@@ -219,14 +213,6 @@ export const Certificate: MessageFns<Certificate, "xray.transport.internet.tls.C
           message.OneTimeLoading = reader.bool();
           continue;
         }
-        case 8: {
-          if (tag !== 64) {
-            break;
-          }
-
-          message.buildChain = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -246,7 +232,6 @@ export const Certificate: MessageFns<Certificate, "xray.transport.internet.tls.C
       certificatePath: isSet(object.certificatePath) ? globalThis.String(object.certificatePath) : "",
       keyPath: isSet(object.keyPath) ? globalThis.String(object.keyPath) : "",
       OneTimeLoading: isSet(object.OneTimeLoading) ? globalThis.Boolean(object.OneTimeLoading) : false,
-      buildChain: isSet(object.buildChain) ? globalThis.Boolean(object.buildChain) : false,
     };
   },
 
@@ -273,9 +258,6 @@ export const Certificate: MessageFns<Certificate, "xray.transport.internet.tls.C
     if (message.OneTimeLoading !== false) {
       obj.OneTimeLoading = message.OneTimeLoading;
     }
-    if (message.buildChain !== false) {
-      obj.buildChain = message.buildChain;
-    }
     return obj;
   },
 
@@ -291,7 +273,6 @@ export const Certificate: MessageFns<Certificate, "xray.transport.internet.tls.C
     message.certificatePath = object.certificatePath ?? "";
     message.keyPath = object.keyPath ?? "";
     message.OneTimeLoading = object.OneTimeLoading ?? false;
-    message.buildChain = object.buildChain ?? false;
     return message;
   },
 };
@@ -310,12 +291,11 @@ function createBaseConfig(): Config {
     minVersion: "",
     maxVersion: "",
     cipherSuites: "",
+    preferServerCipherSuites: false,
     fingerprint: "",
     rejectUnknownSni: false,
     pinnedPeerCertificateChainSha256: [],
     pinnedPeerCertificatePublicKeySha256: [],
-    masterKeyLog: "",
-    curvePreferences: [],
   };
 }
 
@@ -350,6 +330,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     if (message.cipherSuites !== "") {
       writer.uint32(74).string(message.cipherSuites);
     }
+    if (message.preferServerCipherSuites !== false) {
+      writer.uint32(80).bool(message.preferServerCipherSuites);
+    }
     if (message.fingerprint !== "") {
       writer.uint32(90).string(message.fingerprint);
     }
@@ -361,12 +344,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     }
     for (const v of message.pinnedPeerCertificatePublicKeySha256) {
       writer.uint32(114).bytes(v!);
-    }
-    if (message.masterKeyLog !== "") {
-      writer.uint32(122).string(message.masterKeyLog);
-    }
-    for (const v of message.curvePreferences) {
-      writer.uint32(130).string(v!);
     }
     return writer;
   },
@@ -450,6 +427,14 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
           message.cipherSuites = reader.string();
           continue;
         }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.preferServerCipherSuites = reader.bool();
+          continue;
+        }
         case 11: {
           if (tag !== 90) {
             break;
@@ -482,22 +467,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
           message.pinnedPeerCertificatePublicKeySha256.push(reader.bytes());
           continue;
         }
-        case 15: {
-          if (tag !== 122) {
-            break;
-          }
-
-          message.masterKeyLog = reader.string();
-          continue;
-        }
-        case 16: {
-          if (tag !== 130) {
-            break;
-          }
-
-          message.curvePreferences.push(reader.string());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -525,6 +494,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
       minVersion: isSet(object.minVersion) ? globalThis.String(object.minVersion) : "",
       maxVersion: isSet(object.maxVersion) ? globalThis.String(object.maxVersion) : "",
       cipherSuites: isSet(object.cipherSuites) ? globalThis.String(object.cipherSuites) : "",
+      preferServerCipherSuites: isSet(object.preferServerCipherSuites)
+        ? globalThis.Boolean(object.preferServerCipherSuites)
+        : false,
       fingerprint: isSet(object.fingerprint) ? globalThis.String(object.fingerprint) : "",
       rejectUnknownSni: isSet(object.rejectUnknownSni) ? globalThis.Boolean(object.rejectUnknownSni) : false,
       pinnedPeerCertificateChainSha256: globalThis.Array.isArray(object?.pinnedPeerCertificateChainSha256)
@@ -532,10 +504,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
         : [],
       pinnedPeerCertificatePublicKeySha256: globalThis.Array.isArray(object?.pinnedPeerCertificatePublicKeySha256)
         ? object.pinnedPeerCertificatePublicKeySha256.map((e: any) => bytesFromBase64(e))
-        : [],
-      masterKeyLog: isSet(object.masterKeyLog) ? globalThis.String(object.masterKeyLog) : "",
-      curvePreferences: globalThis.Array.isArray(object?.curvePreferences)
-        ? object.curvePreferences.map((e: any) => globalThis.String(e))
         : [],
     };
   },
@@ -569,6 +537,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     if (message.cipherSuites !== "") {
       obj.cipherSuites = message.cipherSuites;
     }
+    if (message.preferServerCipherSuites !== false) {
+      obj.preferServerCipherSuites = message.preferServerCipherSuites;
+    }
     if (message.fingerprint !== "") {
       obj.fingerprint = message.fingerprint;
     }
@@ -582,12 +553,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
       obj.pinnedPeerCertificatePublicKeySha256 = message.pinnedPeerCertificatePublicKeySha256.map((e) =>
         base64FromBytes(e)
       );
-    }
-    if (message.masterKeyLog !== "") {
-      obj.masterKeyLog = message.masterKeyLog;
-    }
-    if (message.curvePreferences?.length) {
-      obj.curvePreferences = message.curvePreferences;
     }
     return obj;
   },
@@ -606,12 +571,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     message.minVersion = object.minVersion ?? "";
     message.maxVersion = object.maxVersion ?? "";
     message.cipherSuites = object.cipherSuites ?? "";
+    message.preferServerCipherSuites = object.preferServerCipherSuites ?? false;
     message.fingerprint = object.fingerprint ?? "";
     message.rejectUnknownSni = object.rejectUnknownSni ?? false;
     message.pinnedPeerCertificateChainSha256 = object.pinnedPeerCertificateChainSha256?.map((e) => e) || [];
     message.pinnedPeerCertificatePublicKeySha256 = object.pinnedPeerCertificatePublicKeySha256?.map((e) => e) || [];
-    message.masterKeyLog = object.masterKeyLog ?? "";
-    message.curvePreferences = object.curvePreferences?.map((e) => e) || [];
     return message;
   },
 };

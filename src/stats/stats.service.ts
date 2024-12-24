@@ -198,63 +198,6 @@ export class StatsService {
     }
 
     /**
-     * Checks if a specific user is currently online on the Xray server.
-     * This method queries the server's real-time connection status for the specified user.
-     *
-     * @param {string} username - The username to check online status for
-     * @returns {Promise<ISdkResponse<GetUserOnlineStatusResponseModel>>} A promise that resolves to:
-     * - On success: An object with `isOk: true` and `data` containing the user's online status (`data.online`)
-     * - On failure: An object with `isOk: false` and error details from STATS_ERRORS
-     *
-     * @example
-     * ```typescript
-     * const stats = new StatsService(channel);
-     * const response = await stats.getUserOnlineStatus('username123');
-     *
-     * if (response.isOk) {
-     *   if (response.data.online) {
-     *     console.log('User is online');
-     *   } else {
-     *     console.log('User is offline');
-     *   }
-     * } else {
-     *   console.error(response.message); // Error message
-     * }
-     * ```
-     */
-    public async getUserOnlineStatus(
-        username: string,
-    ): Promise<ISdkResponse<GetUserOnlineStatusResponseModel>> {
-        try {
-            await this.client.getStatsOnline({
-                name: `user>>>${username}>>>online`,
-            });
-
-            return {
-                isOk: true,
-                data: new GetUserOnlineStatusResponseModel(true),
-            };
-        } catch (error) {
-            let message = '';
-            if (error instanceof Error) {
-                message = error.message;
-            }
-            const isNotFound = message.includes('online not found.');
-            if (isNotFound) {
-                return {
-                    isOk: true,
-                    data: new GetUserOnlineStatusResponseModel(false),
-                };
-            }
-
-            return {
-                isOk: false,
-                ...STATS_ERRORS.GET_USER_ONLINE_STATUS_ERROR(message),
-            };
-        }
-    }
-
-    /**
      * Gets statistics for all inbound connections.
      *
      * @param reset - Whether to reset the statistics after retrieving them. Defaults to false.

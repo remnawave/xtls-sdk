@@ -10,50 +10,116 @@ import { messageTypeRegistry } from "../../../typeRegistry";
 
 export const protobufPackage = "xray.transport.internet.websocket";
 
-export interface Config {
-  $type: "xray.transport.internet.websocket.Config";
-  host: string;
-  /** URL path to the WebSocket service. Empty value means root(/). */
-  path: string;
-  header: { [key: string]: string };
-  acceptProxyProtocol: boolean;
-  ed: number;
-}
-
-export interface Config_HeaderEntry {
-  $type: "xray.transport.internet.websocket.Config.HeaderEntry";
+export interface Header {
+  $type: "xray.transport.internet.websocket.Header";
   key: string;
   value: string;
 }
 
+export interface Config {
+  $type: "xray.transport.internet.websocket.Config";
+  /** URL path to the WebSocket service. Empty value means root(/). */
+  path: string;
+  header: Header[];
+  acceptProxyProtocol: boolean;
+  ed: number;
+}
+
+function createBaseHeader(): Header {
+  return { $type: "xray.transport.internet.websocket.Header", key: "", value: "" };
+}
+
+export const Header: MessageFns<Header, "xray.transport.internet.websocket.Header"> = {
+  $type: "xray.transport.internet.websocket.Header" as const,
+
+  encode(message: Header, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Header {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHeader();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Header {
+    return {
+      $type: Header.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: Header): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Header>): Header {
+    return Header.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Header>): Header {
+    const message = createBaseHeader();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+messageTypeRegistry.set(Header.$type, Header);
+
 function createBaseConfig(): Config {
-  return {
-    $type: "xray.transport.internet.websocket.Config",
-    host: "",
-    path: "",
-    header: {},
-    acceptProxyProtocol: false,
-    ed: 0,
-  };
+  return { $type: "xray.transport.internet.websocket.Config", path: "", header: [], acceptProxyProtocol: false, ed: 0 };
 }
 
 export const Config: MessageFns<Config, "xray.transport.internet.websocket.Config"> = {
   $type: "xray.transport.internet.websocket.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.host !== "") {
-      writer.uint32(10).string(message.host);
-    }
     if (message.path !== "") {
       writer.uint32(18).string(message.path);
     }
-    Object.entries(message.header).forEach(([key, value]) => {
-      Config_HeaderEntry.encode({
-        $type: "xray.transport.internet.websocket.Config.HeaderEntry",
-        key: key as any,
-        value,
-      }, writer.uint32(26).fork()).join();
-    });
+    for (const v of message.header) {
+      Header.encode(v!, writer.uint32(26).fork()).join();
+    }
     if (message.acceptProxyProtocol !== false) {
       writer.uint32(32).bool(message.acceptProxyProtocol);
     }
@@ -70,14 +136,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.host = reader.string();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -91,10 +149,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
             break;
           }
 
-          const entry3 = Config_HeaderEntry.decode(reader, reader.uint32());
-          if (entry3.value !== undefined) {
-            message.header[entry3.key] = entry3.value;
-          }
+          message.header.push(Header.decode(reader, reader.uint32()));
           continue;
         }
         case 4: {
@@ -125,14 +180,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      host: isSet(object.host) ? globalThis.String(object.host) : "",
       path: isSet(object.path) ? globalThis.String(object.path) : "",
-      header: isObject(object.header)
-        ? Object.entries(object.header).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
-        : {},
+      header: globalThis.Array.isArray(object?.header) ? object.header.map((e: any) => Header.fromJSON(e)) : [],
       acceptProxyProtocol: isSet(object.acceptProxyProtocol) ? globalThis.Boolean(object.acceptProxyProtocol) : false,
       ed: isSet(object.ed) ? globalThis.Number(object.ed) : 0,
     };
@@ -140,20 +189,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.host !== "") {
-      obj.host = message.host;
-    }
     if (message.path !== "") {
       obj.path = message.path;
     }
-    if (message.header) {
-      const entries = Object.entries(message.header);
-      if (entries.length > 0) {
-        obj.header = {};
-        entries.forEach(([k, v]) => {
-          obj.header[k] = v;
-        });
-      }
+    if (message.header?.length) {
+      obj.header = message.header.map((e) => Header.toJSON(e));
     }
     if (message.acceptProxyProtocol !== false) {
       obj.acceptProxyProtocol = message.acceptProxyProtocol;
@@ -169,14 +209,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.host = object.host ?? "";
     message.path = object.path ?? "";
-    message.header = Object.entries(object.header ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = globalThis.String(value);
-      }
-      return acc;
-    }, {});
+    message.header = object.header?.map((e) => Header.fromPartial(e)) || [];
     message.acceptProxyProtocol = object.acceptProxyProtocol ?? false;
     message.ed = object.ed ?? 0;
     return message;
@@ -185,90 +219,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
 
 messageTypeRegistry.set(Config.$type, Config);
 
-function createBaseConfig_HeaderEntry(): Config_HeaderEntry {
-  return { $type: "xray.transport.internet.websocket.Config.HeaderEntry", key: "", value: "" };
-}
-
-export const Config_HeaderEntry: MessageFns<
-  Config_HeaderEntry,
-  "xray.transport.internet.websocket.Config.HeaderEntry"
-> = {
-  $type: "xray.transport.internet.websocket.Config.HeaderEntry" as const,
-
-  encode(message: Config_HeaderEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Config_HeaderEntry {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseConfig_HeaderEntry();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Config_HeaderEntry {
-    return {
-      $type: Config_HeaderEntry.$type,
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-    };
-  },
-
-  toJSON(message: Config_HeaderEntry): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Config_HeaderEntry>): Config_HeaderEntry {
-    return Config_HeaderEntry.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Config_HeaderEntry>): Config_HeaderEntry {
-    const message = createBaseConfig_HeaderEntry();
-    message.key = object.key ?? "";
-    message.value = object.value ?? "";
-    return message;
-  },
-};
-
-messageTypeRegistry.set(Config_HeaderEntry.$type, Config_HeaderEntry);
-
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -276,10 +226,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

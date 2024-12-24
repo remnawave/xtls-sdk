@@ -14,7 +14,7 @@ export const protobufPackage = "xray.proxy.socks";
 
 /** AuthType is the authentication type of Socks proxy. */
 export enum AuthType {
-  /** NO_AUTH - NO_AUTH is for anonymous authentication. */
+  /** NO_AUTH - NO_AUTH is for anounymous authentication. */
   NO_AUTH = 0,
   /** PASSWORD - PASSWORD is for username/password authentication. */
   PASSWORD = 1,
@@ -48,6 +48,45 @@ export function authTypeToJSON(object: AuthType): string {
   }
 }
 
+export enum Version {
+  SOCKS5 = 0,
+  SOCKS4 = 1,
+  SOCKS4A = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function versionFromJSON(object: any): Version {
+  switch (object) {
+    case 0:
+    case "SOCKS5":
+      return Version.SOCKS5;
+    case 1:
+    case "SOCKS4":
+      return Version.SOCKS4;
+    case 2:
+    case "SOCKS4A":
+      return Version.SOCKS4A;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Version.UNRECOGNIZED;
+  }
+}
+
+export function versionToJSON(object: Version): string {
+  switch (object) {
+    case Version.SOCKS5:
+      return "SOCKS5";
+    case Version.SOCKS4:
+      return "SOCKS4";
+    case Version.SOCKS4A:
+      return "SOCKS4A";
+    case Version.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Account represents a Socks account. */
 export interface Account {
   $type: "xray.proxy.socks.Account";
@@ -62,6 +101,8 @@ export interface ServerConfig {
   accounts: { [key: string]: string };
   address: IPOrDomain | undefined;
   udpEnabled: boolean;
+  /** @deprecated */
+  timeout: number;
   userLevel: number;
 }
 
@@ -76,6 +117,7 @@ export interface ClientConfig {
   $type: "xray.proxy.socks.ClientConfig";
   /** Sever is a list of Socks server addresses. */
   server: ServerEndpoint[];
+  version: Version;
 }
 
 function createBaseAccount(): Account {
@@ -166,6 +208,7 @@ function createBaseServerConfig(): ServerConfig {
     accounts: {},
     address: undefined,
     udpEnabled: false,
+    timeout: 0,
     userLevel: 0,
   };
 }
@@ -189,6 +232,9 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.socks.ServerConf
     }
     if (message.udpEnabled !== false) {
       writer.uint32(32).bool(message.udpEnabled);
+    }
+    if (message.timeout !== 0) {
+      writer.uint32(40).uint32(message.timeout);
     }
     if (message.userLevel !== 0) {
       writer.uint32(48).uint32(message.userLevel);
@@ -238,6 +284,14 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.socks.ServerConf
           message.udpEnabled = reader.bool();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.timeout = reader.uint32();
+          continue;
+        }
         case 6: {
           if (tag !== 48) {
             break;
@@ -267,6 +321,7 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.socks.ServerConf
         : {},
       address: isSet(object.address) ? IPOrDomain.fromJSON(object.address) : undefined,
       udpEnabled: isSet(object.udpEnabled) ? globalThis.Boolean(object.udpEnabled) : false,
+      timeout: isSet(object.timeout) ? globalThis.Number(object.timeout) : 0,
       userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
     };
   },
@@ -291,6 +346,9 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.socks.ServerConf
     if (message.udpEnabled !== false) {
       obj.udpEnabled = message.udpEnabled;
     }
+    if (message.timeout !== 0) {
+      obj.timeout = Math.round(message.timeout);
+    }
     if (message.userLevel !== 0) {
       obj.userLevel = Math.round(message.userLevel);
     }
@@ -313,6 +371,7 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.socks.ServerConf
       ? IPOrDomain.fromPartial(object.address)
       : undefined;
     message.udpEnabled = object.udpEnabled ?? false;
+    message.timeout = object.timeout ?? 0;
     message.userLevel = object.userLevel ?? 0;
     return message;
   },
@@ -405,7 +464,7 @@ export const ServerConfig_AccountsEntry: MessageFns<
 messageTypeRegistry.set(ServerConfig_AccountsEntry.$type, ServerConfig_AccountsEntry);
 
 function createBaseClientConfig(): ClientConfig {
-  return { $type: "xray.proxy.socks.ClientConfig", server: [] };
+  return { $type: "xray.proxy.socks.ClientConfig", server: [], version: 0 };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConfig"> = {
@@ -414,6 +473,9 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConf
   encode(message: ClientConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.server) {
       ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.version !== 0) {
+      writer.uint32(16).int32(message.version);
     }
     return writer;
   },
@@ -433,6 +495,14 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConf
           message.server.push(ServerEndpoint.decode(reader, reader.uint32()));
           continue;
         }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.version = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -446,6 +516,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConf
     return {
       $type: ClientConfig.$type,
       server: globalThis.Array.isArray(object?.server) ? object.server.map((e: any) => ServerEndpoint.fromJSON(e)) : [],
+      version: isSet(object.version) ? versionFromJSON(object.version) : 0,
     };
   },
 
@@ -453,6 +524,9 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConf
     const obj: any = {};
     if (message.server?.length) {
       obj.server = message.server.map((e) => ServerEndpoint.toJSON(e));
+    }
+    if (message.version !== 0) {
+      obj.version = versionToJSON(message.version);
     }
     return obj;
   },
@@ -463,6 +537,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.socks.ClientConf
   fromPartial(object: DeepPartial<ClientConfig>): ClientConfig {
     const message = createBaseClientConfig();
     message.server = object.server?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.version = object.version ?? 0;
     return message;
   },
 };

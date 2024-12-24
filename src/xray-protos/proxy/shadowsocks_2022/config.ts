@@ -8,7 +8,6 @@
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { IPOrDomain } from "../../common/net/address";
 import { Network, networkFromJSON, networkToJSON } from "../../common/net/network";
-import { User } from "../../common/protocol/user";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.shadowsocks_2022";
@@ -47,9 +46,11 @@ export interface RelayServerConfig {
   network: Network[];
 }
 
-export interface Account {
-  $type: "xray.proxy.shadowsocks_2022.Account";
+export interface User {
+  $type: "xray.proxy.shadowsocks_2022.User";
   key: string;
+  email: string;
+  level: number;
 }
 
 export interface ClientConfig {
@@ -596,24 +597,30 @@ export const RelayServerConfig: MessageFns<RelayServerConfig, "xray.proxy.shadow
 
 messageTypeRegistry.set(RelayServerConfig.$type, RelayServerConfig);
 
-function createBaseAccount(): Account {
-  return { $type: "xray.proxy.shadowsocks_2022.Account", key: "" };
+function createBaseUser(): User {
+  return { $type: "xray.proxy.shadowsocks_2022.User", key: "", email: "", level: 0 };
 }
 
-export const Account: MessageFns<Account, "xray.proxy.shadowsocks_2022.Account"> = {
-  $type: "xray.proxy.shadowsocks_2022.Account" as const,
+export const User: MessageFns<User, "xray.proxy.shadowsocks_2022.User"> = {
+  $type: "xray.proxy.shadowsocks_2022.User" as const,
 
-  encode(message: Account, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: User, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.key !== "") {
       writer.uint32(10).string(message.key);
+    }
+    if (message.email !== "") {
+      writer.uint32(18).string(message.email);
+    }
+    if (message.level !== 0) {
+      writer.uint32(24).int32(message.level);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): Account {
+  decode(input: BinaryReader | Uint8Array, length?: number): User {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAccount();
+    const message = createBaseUser();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -625,6 +632,22 @@ export const Account: MessageFns<Account, "xray.proxy.shadowsocks_2022.Account">
           message.key = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.level = reader.int32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -634,29 +657,42 @@ export const Account: MessageFns<Account, "xray.proxy.shadowsocks_2022.Account">
     return message;
   },
 
-  fromJSON(object: any): Account {
-    return { $type: Account.$type, key: isSet(object.key) ? globalThis.String(object.key) : "" };
+  fromJSON(object: any): User {
+    return {
+      $type: User.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      level: isSet(object.level) ? globalThis.Number(object.level) : 0,
+    };
   },
 
-  toJSON(message: Account): unknown {
+  toJSON(message: User): unknown {
     const obj: any = {};
     if (message.key !== "") {
       obj.key = message.key;
     }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.level !== 0) {
+      obj.level = Math.round(message.level);
+    }
     return obj;
   },
 
-  create(base?: DeepPartial<Account>): Account {
-    return Account.fromPartial(base ?? {});
+  create(base?: DeepPartial<User>): User {
+    return User.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<Account>): Account {
-    const message = createBaseAccount();
+  fromPartial(object: DeepPartial<User>): User {
+    const message = createBaseUser();
     message.key = object.key ?? "";
+    message.email = object.email ?? "";
+    message.level = object.level ?? 0;
     return message;
   },
 };
 
-messageTypeRegistry.set(Account.$type, Account);
+messageTypeRegistry.set(User.$type, User);
 
 function createBaseClientConfig(): ClientConfig {
   return {

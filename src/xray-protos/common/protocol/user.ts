@@ -11,7 +11,7 @@ import { TypedMessage } from "../serial/typed_message";
 
 export const protobufPackage = "xray.common.protocol";
 
-/** User is a generic user for all protocols. */
+/** User is a generic user for all procotols. */
 export interface User {
   $type: "xray.common.protocol.User";
   level: number;

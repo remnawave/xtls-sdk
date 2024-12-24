@@ -26,23 +26,14 @@ export interface Fragment {
   intervalMax: number;
 }
 
-export interface Noise {
-  $type: "xray.proxy.freedom.Noise";
-  lengthMin: number;
-  lengthMax: number;
-  delayMin: number;
-  delayMax: number;
-  strNoise: Uint8Array;
-}
-
 export interface Config {
   $type: "xray.proxy.freedom.Config";
   domainStrategy: Config_DomainStrategy;
+  /** @deprecated */
+  timeout: number;
   destinationOverride: DestinationOverride | undefined;
   userLevel: number;
   fragment: Fragment | undefined;
-  proxyProtocol: number;
-  noises: Noise[];
 }
 
 export enum Config_DomainStrategy {
@@ -352,151 +343,14 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
 
 messageTypeRegistry.set(Fragment.$type, Fragment);
 
-function createBaseNoise(): Noise {
-  return {
-    $type: "xray.proxy.freedom.Noise",
-    lengthMin: 0,
-    lengthMax: 0,
-    delayMin: 0,
-    delayMax: 0,
-    strNoise: new Uint8Array(0),
-  };
-}
-
-export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
-  $type: "xray.proxy.freedom.Noise" as const,
-
-  encode(message: Noise, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.lengthMin !== 0) {
-      writer.uint32(8).uint64(message.lengthMin);
-    }
-    if (message.lengthMax !== 0) {
-      writer.uint32(16).uint64(message.lengthMax);
-    }
-    if (message.delayMin !== 0) {
-      writer.uint32(24).uint64(message.delayMin);
-    }
-    if (message.delayMax !== 0) {
-      writer.uint32(32).uint64(message.delayMax);
-    }
-    if (message.strNoise.length !== 0) {
-      writer.uint32(42).bytes(message.strNoise);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Noise {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseNoise();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.lengthMin = longToNumber(reader.uint64());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.lengthMax = longToNumber(reader.uint64());
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.delayMin = longToNumber(reader.uint64());
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.delayMax = longToNumber(reader.uint64());
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.strNoise = reader.bytes();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Noise {
-    return {
-      $type: Noise.$type,
-      lengthMin: isSet(object.lengthMin) ? globalThis.Number(object.lengthMin) : 0,
-      lengthMax: isSet(object.lengthMax) ? globalThis.Number(object.lengthMax) : 0,
-      delayMin: isSet(object.delayMin) ? globalThis.Number(object.delayMin) : 0,
-      delayMax: isSet(object.delayMax) ? globalThis.Number(object.delayMax) : 0,
-      strNoise: isSet(object.strNoise) ? bytesFromBase64(object.strNoise) : new Uint8Array(0),
-    };
-  },
-
-  toJSON(message: Noise): unknown {
-    const obj: any = {};
-    if (message.lengthMin !== 0) {
-      obj.lengthMin = Math.round(message.lengthMin);
-    }
-    if (message.lengthMax !== 0) {
-      obj.lengthMax = Math.round(message.lengthMax);
-    }
-    if (message.delayMin !== 0) {
-      obj.delayMin = Math.round(message.delayMin);
-    }
-    if (message.delayMax !== 0) {
-      obj.delayMax = Math.round(message.delayMax);
-    }
-    if (message.strNoise.length !== 0) {
-      obj.strNoise = base64FromBytes(message.strNoise);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Noise>): Noise {
-    return Noise.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Noise>): Noise {
-    const message = createBaseNoise();
-    message.lengthMin = object.lengthMin ?? 0;
-    message.lengthMax = object.lengthMax ?? 0;
-    message.delayMin = object.delayMin ?? 0;
-    message.delayMax = object.delayMax ?? 0;
-    message.strNoise = object.strNoise ?? new Uint8Array(0);
-    return message;
-  },
-};
-
-messageTypeRegistry.set(Noise.$type, Noise);
-
 function createBaseConfig(): Config {
   return {
     $type: "xray.proxy.freedom.Config",
     domainStrategy: 0,
+    timeout: 0,
     destinationOverride: undefined,
     userLevel: 0,
     fragment: undefined,
-    proxyProtocol: 0,
-    noises: [],
   };
 }
 
@@ -507,6 +361,9 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     if (message.domainStrategy !== 0) {
       writer.uint32(8).int32(message.domainStrategy);
     }
+    if (message.timeout !== 0) {
+      writer.uint32(16).uint32(message.timeout);
+    }
     if (message.destinationOverride !== undefined) {
       DestinationOverride.encode(message.destinationOverride, writer.uint32(26).fork()).join();
     }
@@ -515,12 +372,6 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     }
     if (message.fragment !== undefined) {
       Fragment.encode(message.fragment, writer.uint32(42).fork()).join();
-    }
-    if (message.proxyProtocol !== 0) {
-      writer.uint32(48).uint32(message.proxyProtocol);
-    }
-    for (const v of message.noises) {
-      Noise.encode(v!, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -538,6 +389,14 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
           }
 
           message.domainStrategy = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.timeout = reader.uint32();
           continue;
         }
         case 3: {
@@ -564,22 +423,6 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
           message.fragment = Fragment.decode(reader, reader.uint32());
           continue;
         }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.proxyProtocol = reader.uint32();
-          continue;
-        }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.noises.push(Noise.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -593,13 +436,12 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     return {
       $type: Config.$type,
       domainStrategy: isSet(object.domainStrategy) ? config_DomainStrategyFromJSON(object.domainStrategy) : 0,
+      timeout: isSet(object.timeout) ? globalThis.Number(object.timeout) : 0,
       destinationOverride: isSet(object.destinationOverride)
         ? DestinationOverride.fromJSON(object.destinationOverride)
         : undefined,
       userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
       fragment: isSet(object.fragment) ? Fragment.fromJSON(object.fragment) : undefined,
-      proxyProtocol: isSet(object.proxyProtocol) ? globalThis.Number(object.proxyProtocol) : 0,
-      noises: globalThis.Array.isArray(object?.noises) ? object.noises.map((e: any) => Noise.fromJSON(e)) : [],
     };
   },
 
@@ -607,6 +449,9 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     const obj: any = {};
     if (message.domainStrategy !== 0) {
       obj.domainStrategy = config_DomainStrategyToJSON(message.domainStrategy);
+    }
+    if (message.timeout !== 0) {
+      obj.timeout = Math.round(message.timeout);
     }
     if (message.destinationOverride !== undefined) {
       obj.destinationOverride = DestinationOverride.toJSON(message.destinationOverride);
@@ -617,12 +462,6 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     if (message.fragment !== undefined) {
       obj.fragment = Fragment.toJSON(message.fragment);
     }
-    if (message.proxyProtocol !== 0) {
-      obj.proxyProtocol = Math.round(message.proxyProtocol);
-    }
-    if (message.noises?.length) {
-      obj.noises = message.noises.map((e) => Noise.toJSON(e));
-    }
     return obj;
   },
 
@@ -632,6 +471,7 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
     message.domainStrategy = object.domainStrategy ?? 0;
+    message.timeout = object.timeout ?? 0;
     message.destinationOverride = (object.destinationOverride !== undefined && object.destinationOverride !== null)
       ? DestinationOverride.fromPartial(object.destinationOverride)
       : undefined;
@@ -639,38 +479,11 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     message.fragment = (object.fragment !== undefined && object.fragment !== null)
       ? Fragment.fromPartial(object.fragment)
       : undefined;
-    message.proxyProtocol = object.proxyProtocol ?? 0;
-    message.noises = object.noises?.map((e) => Noise.fromPartial(e)) || [];
     return message;
   },
 };
 
 messageTypeRegistry.set(Config.$type, Config);
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if ((globalThis as any).Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = globalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if ((globalThis as any).Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(globalThis.String.fromCharCode(byte));
-    });
-    return globalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

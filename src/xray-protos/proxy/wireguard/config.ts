@@ -29,7 +29,7 @@ export interface DeviceConfig {
   reserved: Uint8Array;
   domainStrategy: DeviceConfig_DomainStrategy;
   isClient: boolean;
-  noKernelTun: boolean;
+  kernelMode: boolean;
 }
 
 export enum DeviceConfig_DomainStrategy {
@@ -232,7 +232,7 @@ function createBaseDeviceConfig(): DeviceConfig {
     reserved: new Uint8Array(0),
     domainStrategy: 0,
     isClient: false,
-    noKernelTun: false,
+    kernelMode: false,
   };
 }
 
@@ -264,8 +264,8 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     if (message.isClient !== false) {
       writer.uint32(64).bool(message.isClient);
     }
-    if (message.noKernelTun !== false) {
-      writer.uint32(72).bool(message.noKernelTun);
+    if (message.kernelMode !== false) {
+      writer.uint32(72).bool(message.kernelMode);
     }
     return writer;
   },
@@ -346,7 +346,7 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
             break;
           }
 
-          message.noKernelTun = reader.bool();
+          message.kernelMode = reader.bool();
           continue;
         }
       }
@@ -369,7 +369,7 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
       reserved: isSet(object.reserved) ? bytesFromBase64(object.reserved) : new Uint8Array(0),
       domainStrategy: isSet(object.domainStrategy) ? deviceConfig_DomainStrategyFromJSON(object.domainStrategy) : 0,
       isClient: isSet(object.isClient) ? globalThis.Boolean(object.isClient) : false,
-      noKernelTun: isSet(object.noKernelTun) ? globalThis.Boolean(object.noKernelTun) : false,
+      kernelMode: isSet(object.kernelMode) ? globalThis.Boolean(object.kernelMode) : false,
     };
   },
 
@@ -399,8 +399,8 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     if (message.isClient !== false) {
       obj.isClient = message.isClient;
     }
-    if (message.noKernelTun !== false) {
-      obj.noKernelTun = message.noKernelTun;
+    if (message.kernelMode !== false) {
+      obj.kernelMode = message.kernelMode;
     }
     return obj;
   },
@@ -418,7 +418,7 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     message.reserved = object.reserved ?? new Uint8Array(0);
     message.domainStrategy = object.domainStrategy ?? 0;
     message.isClient = object.isClient ?? false;
-    message.noKernelTun = object.noKernelTun ?? false;
+    message.kernelMode = object.kernelMode ?? false;
     return message;
   },
 };

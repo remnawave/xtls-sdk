@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { IPOrDomain } from "../../common/net/address";
 import { Endpoint } from "../../common/net/destination";
 import { messageTypeRegistry } from "../../typeRegistry";
 import { GeoIP } from "../router/config";
@@ -122,10 +123,22 @@ export interface NameServer_OriginalRule {
 export interface Config {
   $type: "xray.app.dns.Config";
   /**
-   * NameServer list used by this DNS client.
-   * A special value 'localhost' as a domain address can be set to use DNS on local system.
+   * Nameservers used by this DNS. Only traditional UDP servers are support at
+   * the moment. A special value 'localhost' as a domain address can be set to
+   * use DNS on local system.
+   *
+   * @deprecated
    */
+  NameServers: Endpoint[];
+  /** NameServer list used by this DNS client. */
   nameServer: NameServer[];
+  /**
+   * Static hosts. Domain to IP.
+   * Deprecated. Use static_hosts.
+   *
+   * @deprecated
+   */
+  Hosts: { [key: string]: IPOrDomain };
   /**
    * Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes
    * (IPv6).
@@ -139,6 +152,12 @@ export interface Config {
   queryStrategy: QueryStrategy;
   disableFallback: boolean;
   disableFallbackIfMatch: boolean;
+}
+
+export interface Config_HostsEntry {
+  $type: "xray.app.dns.Config.HostsEntry";
+  key: string;
+  value: IPOrDomain | undefined;
 }
 
 export interface Config_HostMapping {
@@ -497,7 +516,9 @@ messageTypeRegistry.set(NameServer_OriginalRule.$type, NameServer_OriginalRule);
 function createBaseConfig(): Config {
   return {
     $type: "xray.app.dns.Config",
+    NameServers: [],
     nameServer: [],
+    Hosts: {},
     clientIp: new Uint8Array(0),
     staticHosts: [],
     tag: "",
@@ -512,9 +533,18 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
   $type: "xray.app.dns.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.NameServers) {
+      Endpoint.encode(v!, writer.uint32(10).fork()).join();
+    }
     for (const v of message.nameServer) {
       NameServer.encode(v!, writer.uint32(42).fork()).join();
     }
+    Object.entries(message.Hosts).forEach(([key, value]) => {
+      Config_HostsEntry.encode(
+        { $type: "xray.app.dns.Config.HostsEntry", key: key as any, value },
+        writer.uint32(18).fork(),
+      ).join();
+    });
     if (message.clientIp.length !== 0) {
       writer.uint32(26).bytes(message.clientIp);
     }
@@ -546,12 +576,31 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.NameServers.push(Endpoint.decode(reader, reader.uint32()));
+          continue;
+        }
         case 5: {
           if (tag !== 42) {
             break;
           }
 
           message.nameServer.push(NameServer.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = Config_HostsEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.Hosts[entry2.key] = entry2.value;
+          }
           continue;
         }
         case 3: {
@@ -622,9 +671,18 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
+      NameServers: globalThis.Array.isArray(object?.NameServers)
+        ? object.NameServers.map((e: any) => Endpoint.fromJSON(e))
+        : [],
       nameServer: globalThis.Array.isArray(object?.nameServer)
         ? object.nameServer.map((e: any) => NameServer.fromJSON(e))
         : [],
+      Hosts: isObject(object.Hosts)
+        ? Object.entries(object.Hosts).reduce<{ [key: string]: IPOrDomain }>((acc, [key, value]) => {
+          acc[key] = IPOrDomain.fromJSON(value);
+          return acc;
+        }, {})
+        : {},
       clientIp: isSet(object.clientIp) ? bytesFromBase64(object.clientIp) : new Uint8Array(0),
       staticHosts: globalThis.Array.isArray(object?.staticHosts)
         ? object.staticHosts.map((e: any) => Config_HostMapping.fromJSON(e))
@@ -641,8 +699,20 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
 
   toJSON(message: Config): unknown {
     const obj: any = {};
+    if (message.NameServers?.length) {
+      obj.NameServers = message.NameServers.map((e) => Endpoint.toJSON(e));
+    }
     if (message.nameServer?.length) {
       obj.nameServer = message.nameServer.map((e) => NameServer.toJSON(e));
+    }
+    if (message.Hosts) {
+      const entries = Object.entries(message.Hosts);
+      if (entries.length > 0) {
+        obj.Hosts = {};
+        entries.forEach(([k, v]) => {
+          obj.Hosts[k] = IPOrDomain.toJSON(v);
+        });
+      }
     }
     if (message.clientIp.length !== 0) {
       obj.clientIp = base64FromBytes(message.clientIp);
@@ -673,7 +743,14 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
+    message.NameServers = object.NameServers?.map((e) => Endpoint.fromPartial(e)) || [];
     message.nameServer = object.nameServer?.map((e) => NameServer.fromPartial(e)) || [];
+    message.Hosts = Object.entries(object.Hosts ?? {}).reduce<{ [key: string]: IPOrDomain }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = IPOrDomain.fromPartial(value);
+      }
+      return acc;
+    }, {});
     message.clientIp = object.clientIp ?? new Uint8Array(0);
     message.staticHosts = object.staticHosts?.map((e) => Config_HostMapping.fromPartial(e)) || [];
     message.tag = object.tag ?? "";
@@ -686,6 +763,89 @@ export const Config: MessageFns<Config, "xray.app.dns.Config"> = {
 };
 
 messageTypeRegistry.set(Config.$type, Config);
+
+function createBaseConfig_HostsEntry(): Config_HostsEntry {
+  return { $type: "xray.app.dns.Config.HostsEntry", key: "", value: undefined };
+}
+
+export const Config_HostsEntry: MessageFns<Config_HostsEntry, "xray.app.dns.Config.HostsEntry"> = {
+  $type: "xray.app.dns.Config.HostsEntry" as const,
+
+  encode(message: Config_HostsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== undefined) {
+      IPOrDomain.encode(message.value, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Config_HostsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseConfig_HostsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = IPOrDomain.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Config_HostsEntry {
+    return {
+      $type: Config_HostsEntry.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? IPOrDomain.fromJSON(object.value) : undefined,
+    };
+  },
+
+  toJSON(message: Config_HostsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== undefined) {
+      obj.value = IPOrDomain.toJSON(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Config_HostsEntry>): Config_HostsEntry {
+    return Config_HostsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Config_HostsEntry>): Config_HostsEntry {
+    const message = createBaseConfig_HostsEntry();
+    message.key = object.key ?? "";
+    message.value = (object.value !== undefined && object.value !== null)
+      ? IPOrDomain.fromPartial(object.value)
+      : undefined;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(Config_HostsEntry.$type, Config_HostsEntry);
 
 function createBaseConfig_HostMapping(): Config_HostMapping {
   return { $type: "xray.app.dns.Config.HostMapping", type: 0, domain: "", ip: [], proxiedDomain: "" };
@@ -832,6 +992,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

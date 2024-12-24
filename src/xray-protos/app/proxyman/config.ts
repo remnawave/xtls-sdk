@@ -14,6 +14,39 @@ import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.app.proxyman";
 
+export enum KnownProtocols {
+  HTTP = 0,
+  TLS = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function knownProtocolsFromJSON(object: any): KnownProtocols {
+  switch (object) {
+    case 0:
+    case "HTTP":
+      return KnownProtocols.HTTP;
+    case 1:
+    case "TLS":
+      return KnownProtocols.TLS;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return KnownProtocols.UNRECOGNIZED;
+  }
+}
+
+export function knownProtocolsToJSON(object: KnownProtocols): string {
+  switch (object) {
+    case KnownProtocols.HTTP:
+      return "HTTP";
+    case KnownProtocols.TLS:
+      return "TLS";
+    case KnownProtocols.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface InboundConfig {
   $type: "xray.app.proxyman.InboundConfig";
 }
@@ -117,6 +150,13 @@ export interface ReceiverConfig {
   allocationStrategy: AllocationStrategy | undefined;
   streamSettings: StreamConfig | undefined;
   receiveOriginalDestination: boolean;
+  /**
+   * Override domains for the given protocol.
+   * Deprecated. Use sniffing_settings.
+   *
+   * @deprecated
+   */
+  domainOverride: KnownProtocols[];
   sniffingSettings: SniffingConfig | undefined;
 }
 
@@ -138,7 +178,6 @@ export interface SenderConfig {
   streamSettings: StreamConfig | undefined;
   proxySettings: ProxyConfig | undefined;
   multiplexSettings: MultiplexingConfig | undefined;
-  viaCidr: string;
 }
 
 export interface MultiplexingConfig {
@@ -609,6 +648,7 @@ function createBaseReceiverConfig(): ReceiverConfig {
     allocationStrategy: undefined,
     streamSettings: undefined,
     receiveOriginalDestination: false,
+    domainOverride: [],
     sniffingSettings: undefined,
   };
 }
@@ -632,8 +672,13 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
     if (message.receiveOriginalDestination !== false) {
       writer.uint32(40).bool(message.receiveOriginalDestination);
     }
+    writer.uint32(58).fork();
+    for (const v of message.domainOverride) {
+      writer.int32(v);
+    }
+    writer.join();
     if (message.sniffingSettings !== undefined) {
-      SniffingConfig.encode(message.sniffingSettings, writer.uint32(58).fork()).join();
+      SniffingConfig.encode(message.sniffingSettings, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -686,7 +731,25 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
           continue;
         }
         case 7: {
-          if (tag !== 58) {
+          if (tag === 56) {
+            message.domainOverride.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 58) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.domainOverride.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 8: {
+          if (tag !== 66) {
             break;
           }
 
@@ -714,6 +777,9 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
       receiveOriginalDestination: isSet(object.receiveOriginalDestination)
         ? globalThis.Boolean(object.receiveOriginalDestination)
         : false,
+      domainOverride: globalThis.Array.isArray(object?.domainOverride)
+        ? object.domainOverride.map((e: any) => knownProtocolsFromJSON(e))
+        : [],
       sniffingSettings: isSet(object.sniffingSettings) ? SniffingConfig.fromJSON(object.sniffingSettings) : undefined,
     };
   },
@@ -734,6 +800,9 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
     }
     if (message.receiveOriginalDestination !== false) {
       obj.receiveOriginalDestination = message.receiveOriginalDestination;
+    }
+    if (message.domainOverride?.length) {
+      obj.domainOverride = message.domainOverride.map((e) => knownProtocolsToJSON(e));
     }
     if (message.sniffingSettings !== undefined) {
       obj.sniffingSettings = SniffingConfig.toJSON(message.sniffingSettings);
@@ -759,6 +828,7 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
       ? StreamConfig.fromPartial(object.streamSettings)
       : undefined;
     message.receiveOriginalDestination = object.receiveOriginalDestination ?? false;
+    message.domainOverride = object.domainOverride?.map((e) => e) || [];
     message.sniffingSettings = (object.sniffingSettings !== undefined && object.sniffingSettings !== null)
       ? SniffingConfig.fromPartial(object.sniffingSettings)
       : undefined;
@@ -928,7 +998,6 @@ function createBaseSenderConfig(): SenderConfig {
     streamSettings: undefined,
     proxySettings: undefined,
     multiplexSettings: undefined,
-    viaCidr: "",
   };
 }
 
@@ -947,9 +1016,6 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
     }
     if (message.multiplexSettings !== undefined) {
       MultiplexingConfig.encode(message.multiplexSettings, writer.uint32(34).fork()).join();
-    }
-    if (message.viaCidr !== "") {
-      writer.uint32(42).string(message.viaCidr);
     }
     return writer;
   },
@@ -993,14 +1059,6 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
           message.multiplexSettings = MultiplexingConfig.decode(reader, reader.uint32());
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.viaCidr = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1019,7 +1077,6 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
       multiplexSettings: isSet(object.multiplexSettings)
         ? MultiplexingConfig.fromJSON(object.multiplexSettings)
         : undefined,
-      viaCidr: isSet(object.viaCidr) ? globalThis.String(object.viaCidr) : "",
     };
   },
 
@@ -1036,9 +1093,6 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
     }
     if (message.multiplexSettings !== undefined) {
       obj.multiplexSettings = MultiplexingConfig.toJSON(message.multiplexSettings);
-    }
-    if (message.viaCidr !== "") {
-      obj.viaCidr = message.viaCidr;
     }
     return obj;
   },
@@ -1058,7 +1112,6 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
     message.multiplexSettings = (object.multiplexSettings !== undefined && object.multiplexSettings !== null)
       ? MultiplexingConfig.fromPartial(object.multiplexSettings)
       : undefined;
-    message.viaCidr = object.viaCidr ?? "";
     return message;
   },
 };

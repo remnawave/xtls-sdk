@@ -6,11 +6,67 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { IPOrDomain } from "../../common/net/address";
 import { TypedMessage } from "../../common/serial/typed_message";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.transport.internet";
+
+export enum TransportProtocol {
+  TCP = 0,
+  UDP = 1,
+  MKCP = 2,
+  WebSocket = 3,
+  HTTP = 4,
+  DomainSocket = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function transportProtocolFromJSON(object: any): TransportProtocol {
+  switch (object) {
+    case 0:
+    case "TCP":
+      return TransportProtocol.TCP;
+    case 1:
+    case "UDP":
+      return TransportProtocol.UDP;
+    case 2:
+    case "MKCP":
+      return TransportProtocol.MKCP;
+    case 3:
+    case "WebSocket":
+      return TransportProtocol.WebSocket;
+    case 4:
+    case "HTTP":
+      return TransportProtocol.HTTP;
+    case 5:
+    case "DomainSocket":
+      return TransportProtocol.DomainSocket;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return TransportProtocol.UNRECOGNIZED;
+  }
+}
+
+export function transportProtocolToJSON(object: TransportProtocol): string {
+  switch (object) {
+    case TransportProtocol.TCP:
+      return "TCP";
+    case TransportProtocol.UDP:
+      return "UDP";
+    case TransportProtocol.MKCP:
+      return "MKCP";
+    case TransportProtocol.WebSocket:
+      return "WebSocket";
+    case TransportProtocol.HTTP:
+      return "HTTP";
+    case TransportProtocol.DomainSocket:
+      return "DomainSocket";
+    case TransportProtocol.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 export enum DomainStrategy {
   AS_IS = 0,
@@ -101,22 +157,33 @@ export function domainStrategyToJSON(object: DomainStrategy): string {
 
 export interface TransportConfig {
   $type: "xray.transport.internet.TransportConfig";
-  /** Transport protocol name. */
+  /**
+   * Type of network that this settings supports.
+   * Deprecated. Use the string form below.
+   *
+   * @deprecated
+   */
+  protocol: TransportProtocol;
+  /** Type of network that this settings supports. */
   protocolName: string;
-  /** Specific transport protocol settings. */
+  /** Specific settings. Must be of the transports. */
   settings: TypedMessage | undefined;
 }
 
 export interface StreamConfig {
   $type: "xray.transport.internet.StreamConfig";
-  address: IPOrDomain | undefined;
-  port: number;
+  /**
+   * Effective network. Deprecated. Use the string form below.
+   *
+   * @deprecated
+   */
+  protocol: TransportProtocol;
   /** Effective network. */
   protocolName: string;
   transportSettings: TransportConfig[];
   /** Type of security. Must be a message name of the settings proto. */
   securityType: string;
-  /** Transport security settings. They can be either TLS or REALITY. */
+  /** Settings for transport security. For now the only choice is TLS. */
   securitySettings: TypedMessage[];
   socketSettings: SocketConfig | undefined;
 }
@@ -125,14 +192,6 @@ export interface ProxyConfig {
   $type: "xray.transport.internet.ProxyConfig";
   tag: string;
   transportLayerProxy: boolean;
-}
-
-export interface CustomSockopt {
-  $type: "xray.transport.internet.CustomSockopt";
-  level: string;
-  opt: string;
-  value: string;
-  type: string;
 }
 
 /** SocketConfig is options to be applied on network sockets. */
@@ -164,7 +223,6 @@ export interface SocketConfig {
   tcpMaxSeg: number;
   tcpNoDelay: boolean;
   tcpMptcp: boolean;
-  customSockopt: CustomSockopt[];
 }
 
 export enum SocketConfig_TProxyMode {
@@ -210,13 +268,16 @@ export function socketConfig_TProxyModeToJSON(object: SocketConfig_TProxyMode): 
 }
 
 function createBaseTransportConfig(): TransportConfig {
-  return { $type: "xray.transport.internet.TransportConfig", protocolName: "", settings: undefined };
+  return { $type: "xray.transport.internet.TransportConfig", protocol: 0, protocolName: "", settings: undefined };
 }
 
 export const TransportConfig: MessageFns<TransportConfig, "xray.transport.internet.TransportConfig"> = {
   $type: "xray.transport.internet.TransportConfig" as const,
 
   encode(message: TransportConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.protocol !== 0) {
+      writer.uint32(8).int32(message.protocol);
+    }
     if (message.protocolName !== "") {
       writer.uint32(26).string(message.protocolName);
     }
@@ -233,6 +294,14 @@ export const TransportConfig: MessageFns<TransportConfig, "xray.transport.intern
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.protocol = reader.int32() as any;
+          continue;
+        }
         case 3: {
           if (tag !== 26) {
             break;
@@ -261,6 +330,7 @@ export const TransportConfig: MessageFns<TransportConfig, "xray.transport.intern
   fromJSON(object: any): TransportConfig {
     return {
       $type: TransportConfig.$type,
+      protocol: isSet(object.protocol) ? transportProtocolFromJSON(object.protocol) : 0,
       protocolName: isSet(object.protocolName) ? globalThis.String(object.protocolName) : "",
       settings: isSet(object.settings) ? TypedMessage.fromJSON(object.settings) : undefined,
     };
@@ -268,6 +338,9 @@ export const TransportConfig: MessageFns<TransportConfig, "xray.transport.intern
 
   toJSON(message: TransportConfig): unknown {
     const obj: any = {};
+    if (message.protocol !== 0) {
+      obj.protocol = transportProtocolToJSON(message.protocol);
+    }
     if (message.protocolName !== "") {
       obj.protocolName = message.protocolName;
     }
@@ -282,6 +355,7 @@ export const TransportConfig: MessageFns<TransportConfig, "xray.transport.intern
   },
   fromPartial(object: DeepPartial<TransportConfig>): TransportConfig {
     const message = createBaseTransportConfig();
+    message.protocol = object.protocol ?? 0;
     message.protocolName = object.protocolName ?? "";
     message.settings = (object.settings !== undefined && object.settings !== null)
       ? TypedMessage.fromPartial(object.settings)
@@ -295,8 +369,7 @@ messageTypeRegistry.set(TransportConfig.$type, TransportConfig);
 function createBaseStreamConfig(): StreamConfig {
   return {
     $type: "xray.transport.internet.StreamConfig",
-    address: undefined,
-    port: 0,
+    protocol: 0,
     protocolName: "",
     transportSettings: [],
     securityType: "",
@@ -309,11 +382,8 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
   $type: "xray.transport.internet.StreamConfig" as const,
 
   encode(message: StreamConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.address !== undefined) {
-      IPOrDomain.encode(message.address, writer.uint32(66).fork()).join();
-    }
-    if (message.port !== 0) {
-      writer.uint32(72).uint32(message.port);
+    if (message.protocol !== 0) {
+      writer.uint32(8).int32(message.protocol);
     }
     if (message.protocolName !== "") {
       writer.uint32(42).string(message.protocolName);
@@ -340,20 +410,12 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 8: {
-          if (tag !== 66) {
+        case 1: {
+          if (tag !== 8) {
             break;
           }
 
-          message.address = IPOrDomain.decode(reader, reader.uint32());
-          continue;
-        }
-        case 9: {
-          if (tag !== 72) {
-            break;
-          }
-
-          message.port = reader.uint32();
+          message.protocol = reader.int32() as any;
           continue;
         }
         case 5: {
@@ -408,8 +470,7 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
   fromJSON(object: any): StreamConfig {
     return {
       $type: StreamConfig.$type,
-      address: isSet(object.address) ? IPOrDomain.fromJSON(object.address) : undefined,
-      port: isSet(object.port) ? globalThis.Number(object.port) : 0,
+      protocol: isSet(object.protocol) ? transportProtocolFromJSON(object.protocol) : 0,
       protocolName: isSet(object.protocolName) ? globalThis.String(object.protocolName) : "",
       transportSettings: globalThis.Array.isArray(object?.transportSettings)
         ? object.transportSettings.map((e: any) => TransportConfig.fromJSON(e))
@@ -424,11 +485,8 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
 
   toJSON(message: StreamConfig): unknown {
     const obj: any = {};
-    if (message.address !== undefined) {
-      obj.address = IPOrDomain.toJSON(message.address);
-    }
-    if (message.port !== 0) {
-      obj.port = Math.round(message.port);
+    if (message.protocol !== 0) {
+      obj.protocol = transportProtocolToJSON(message.protocol);
     }
     if (message.protocolName !== "") {
       obj.protocolName = message.protocolName;
@@ -453,10 +511,7 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
   },
   fromPartial(object: DeepPartial<StreamConfig>): StreamConfig {
     const message = createBaseStreamConfig();
-    message.address = (object.address !== undefined && object.address !== null)
-      ? IPOrDomain.fromPartial(object.address)
-      : undefined;
-    message.port = object.port ?? 0;
+    message.protocol = object.protocol ?? 0;
     message.protocolName = object.protocolName ?? "";
     message.transportSettings = object.transportSettings?.map((e) => TransportConfig.fromPartial(e)) || [];
     message.securityType = object.securityType ?? "";
@@ -551,119 +606,6 @@ export const ProxyConfig: MessageFns<ProxyConfig, "xray.transport.internet.Proxy
 
 messageTypeRegistry.set(ProxyConfig.$type, ProxyConfig);
 
-function createBaseCustomSockopt(): CustomSockopt {
-  return { $type: "xray.transport.internet.CustomSockopt", level: "", opt: "", value: "", type: "" };
-}
-
-export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.CustomSockopt"> = {
-  $type: "xray.transport.internet.CustomSockopt" as const,
-
-  encode(message: CustomSockopt, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.level !== "") {
-      writer.uint32(10).string(message.level);
-    }
-    if (message.opt !== "") {
-      writer.uint32(18).string(message.opt);
-    }
-    if (message.value !== "") {
-      writer.uint32(26).string(message.value);
-    }
-    if (message.type !== "") {
-      writer.uint32(34).string(message.type);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): CustomSockopt {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCustomSockopt();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.level = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.opt = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.type = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CustomSockopt {
-    return {
-      $type: CustomSockopt.$type,
-      level: isSet(object.level) ? globalThis.String(object.level) : "",
-      opt: isSet(object.opt) ? globalThis.String(object.opt) : "",
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-      type: isSet(object.type) ? globalThis.String(object.type) : "",
-    };
-  },
-
-  toJSON(message: CustomSockopt): unknown {
-    const obj: any = {};
-    if (message.level !== "") {
-      obj.level = message.level;
-    }
-    if (message.opt !== "") {
-      obj.opt = message.opt;
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    if (message.type !== "") {
-      obj.type = message.type;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CustomSockopt>): CustomSockopt {
-    return CustomSockopt.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CustomSockopt>): CustomSockopt {
-    const message = createBaseCustomSockopt();
-    message.level = object.level ?? "";
-    message.opt = object.opt ?? "";
-    message.value = object.value ?? "";
-    message.type = object.type ?? "";
-    return message;
-  },
-};
-
-messageTypeRegistry.set(CustomSockopt.$type, CustomSockopt);
-
 function createBaseSocketConfig(): SocketConfig {
   return {
     $type: "xray.transport.internet.SocketConfig",
@@ -686,7 +628,6 @@ function createBaseSocketConfig(): SocketConfig {
     tcpMaxSeg: 0,
     tcpNoDelay: false,
     tcpMptcp: false,
-    customSockopt: [],
   };
 }
 
@@ -750,9 +691,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     }
     if (message.tcpMptcp !== false) {
       writer.uint32(152).bool(message.tcpMptcp);
-    }
-    for (const v of message.customSockopt) {
-      CustomSockopt.encode(v!, writer.uint32(162).fork()).join();
     }
     return writer;
   },
@@ -916,14 +854,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
           message.tcpMptcp = reader.bool();
           continue;
         }
-        case 20: {
-          if (tag !== 162) {
-            break;
-          }
-
-          message.customSockopt.push(CustomSockopt.decode(reader, reader.uint32()));
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -957,9 +887,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
       tcpMaxSeg: isSet(object.tcpMaxSeg) ? globalThis.Number(object.tcpMaxSeg) : 0,
       tcpNoDelay: isSet(object.tcpNoDelay) ? globalThis.Boolean(object.tcpNoDelay) : false,
       tcpMptcp: isSet(object.tcpMptcp) ? globalThis.Boolean(object.tcpMptcp) : false,
-      customSockopt: globalThis.Array.isArray(object?.customSockopt)
-        ? object.customSockopt.map((e: any) => CustomSockopt.fromJSON(e))
-        : [],
     };
   },
 
@@ -1022,9 +949,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.tcpMptcp !== false) {
       obj.tcpMptcp = message.tcpMptcp;
     }
-    if (message.customSockopt?.length) {
-      obj.customSockopt = message.customSockopt.map((e) => CustomSockopt.toJSON(e));
-    }
     return obj;
   },
 
@@ -1052,7 +976,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     message.tcpMaxSeg = object.tcpMaxSeg ?? 0;
     message.tcpNoDelay = object.tcpNoDelay ?? false;
     message.tcpMptcp = object.tcpMptcp ?? false;
-    message.customSockopt = object.customSockopt?.map((e) => CustomSockopt.fromPartial(e)) || [];
     return message;
   },
 };

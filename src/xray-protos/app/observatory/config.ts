@@ -15,16 +15,6 @@ export interface ObservationResult {
   status: OutboundStatus[];
 }
 
-export interface HealthPingMeasurementResult {
-  $type: "xray.core.app.observatory.HealthPingMeasurementResult";
-  all: number;
-  fail: number;
-  deviation: number;
-  average: number;
-  max: number;
-  min: number;
-}
-
 export interface OutboundStatus {
   $type: "xray.core.app.observatory.OutboundStatus";
   /**
@@ -58,7 +48,6 @@ export interface OutboundStatus {
    * @Type id.outboundTag
    */
   lastTryTime: number;
-  healthPing: HealthPingMeasurementResult | undefined;
 }
 
 export interface ProbeResult {
@@ -164,162 +153,6 @@ export const ObservationResult: MessageFns<ObservationResult, "xray.core.app.obs
 
 messageTypeRegistry.set(ObservationResult.$type, ObservationResult);
 
-function createBaseHealthPingMeasurementResult(): HealthPingMeasurementResult {
-  return {
-    $type: "xray.core.app.observatory.HealthPingMeasurementResult",
-    all: 0,
-    fail: 0,
-    deviation: 0,
-    average: 0,
-    max: 0,
-    min: 0,
-  };
-}
-
-export const HealthPingMeasurementResult: MessageFns<
-  HealthPingMeasurementResult,
-  "xray.core.app.observatory.HealthPingMeasurementResult"
-> = {
-  $type: "xray.core.app.observatory.HealthPingMeasurementResult" as const,
-
-  encode(message: HealthPingMeasurementResult, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.all !== 0) {
-      writer.uint32(8).int64(message.all);
-    }
-    if (message.fail !== 0) {
-      writer.uint32(16).int64(message.fail);
-    }
-    if (message.deviation !== 0) {
-      writer.uint32(24).int64(message.deviation);
-    }
-    if (message.average !== 0) {
-      writer.uint32(32).int64(message.average);
-    }
-    if (message.max !== 0) {
-      writer.uint32(40).int64(message.max);
-    }
-    if (message.min !== 0) {
-      writer.uint32(48).int64(message.min);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): HealthPingMeasurementResult {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseHealthPingMeasurementResult();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.all = longToNumber(reader.int64());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.fail = longToNumber(reader.int64());
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.deviation = longToNumber(reader.int64());
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.average = longToNumber(reader.int64());
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.max = longToNumber(reader.int64());
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.min = longToNumber(reader.int64());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): HealthPingMeasurementResult {
-    return {
-      $type: HealthPingMeasurementResult.$type,
-      all: isSet(object.all) ? globalThis.Number(object.all) : 0,
-      fail: isSet(object.fail) ? globalThis.Number(object.fail) : 0,
-      deviation: isSet(object.deviation) ? globalThis.Number(object.deviation) : 0,
-      average: isSet(object.average) ? globalThis.Number(object.average) : 0,
-      max: isSet(object.max) ? globalThis.Number(object.max) : 0,
-      min: isSet(object.min) ? globalThis.Number(object.min) : 0,
-    };
-  },
-
-  toJSON(message: HealthPingMeasurementResult): unknown {
-    const obj: any = {};
-    if (message.all !== 0) {
-      obj.all = Math.round(message.all);
-    }
-    if (message.fail !== 0) {
-      obj.fail = Math.round(message.fail);
-    }
-    if (message.deviation !== 0) {
-      obj.deviation = Math.round(message.deviation);
-    }
-    if (message.average !== 0) {
-      obj.average = Math.round(message.average);
-    }
-    if (message.max !== 0) {
-      obj.max = Math.round(message.max);
-    }
-    if (message.min !== 0) {
-      obj.min = Math.round(message.min);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<HealthPingMeasurementResult>): HealthPingMeasurementResult {
-    return HealthPingMeasurementResult.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<HealthPingMeasurementResult>): HealthPingMeasurementResult {
-    const message = createBaseHealthPingMeasurementResult();
-    message.all = object.all ?? 0;
-    message.fail = object.fail ?? 0;
-    message.deviation = object.deviation ?? 0;
-    message.average = object.average ?? 0;
-    message.max = object.max ?? 0;
-    message.min = object.min ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(HealthPingMeasurementResult.$type, HealthPingMeasurementResult);
-
 function createBaseOutboundStatus(): OutboundStatus {
   return {
     $type: "xray.core.app.observatory.OutboundStatus",
@@ -329,7 +162,6 @@ function createBaseOutboundStatus(): OutboundStatus {
     outboundTag: "",
     lastSeenTime: 0,
     lastTryTime: 0,
-    healthPing: undefined,
   };
 }
 
@@ -354,9 +186,6 @@ export const OutboundStatus: MessageFns<OutboundStatus, "xray.core.app.observato
     }
     if (message.lastTryTime !== 0) {
       writer.uint32(48).int64(message.lastTryTime);
-    }
-    if (message.healthPing !== undefined) {
-      HealthPingMeasurementResult.encode(message.healthPing, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -416,14 +245,6 @@ export const OutboundStatus: MessageFns<OutboundStatus, "xray.core.app.observato
           message.lastTryTime = longToNumber(reader.int64());
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.healthPing = HealthPingMeasurementResult.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -442,7 +263,6 @@ export const OutboundStatus: MessageFns<OutboundStatus, "xray.core.app.observato
       outboundTag: isSet(object.outboundTag) ? globalThis.String(object.outboundTag) : "",
       lastSeenTime: isSet(object.lastSeenTime) ? globalThis.Number(object.lastSeenTime) : 0,
       lastTryTime: isSet(object.lastTryTime) ? globalThis.Number(object.lastTryTime) : 0,
-      healthPing: isSet(object.healthPing) ? HealthPingMeasurementResult.fromJSON(object.healthPing) : undefined,
     };
   },
 
@@ -466,9 +286,6 @@ export const OutboundStatus: MessageFns<OutboundStatus, "xray.core.app.observato
     if (message.lastTryTime !== 0) {
       obj.lastTryTime = Math.round(message.lastTryTime);
     }
-    if (message.healthPing !== undefined) {
-      obj.healthPing = HealthPingMeasurementResult.toJSON(message.healthPing);
-    }
     return obj;
   },
 
@@ -483,9 +300,6 @@ export const OutboundStatus: MessageFns<OutboundStatus, "xray.core.app.observato
     message.outboundTag = object.outboundTag ?? "";
     message.lastSeenTime = object.lastSeenTime ?? 0;
     message.lastTryTime = object.lastTryTime ?? 0;
-    message.healthPing = (object.healthPing !== undefined && object.healthPing !== null)
-      ? HealthPingMeasurementResult.fromPartial(object.healthPing)
-      : undefined;
     return message;
   },
 };

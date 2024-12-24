@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { IPOrDomain } from "../../common/net/address";
-import { Network, networkFromJSON, networkToJSON } from "../../common/net/network";
+import { Network, networkFromJSON, NetworkList, networkToJSON } from "../../common/net/network";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.dokodemo";
@@ -16,8 +16,19 @@ export interface Config {
   $type: "xray.proxy.dokodemo.Config";
   address: IPOrDomain | undefined;
   port: number;
+  /**
+   * List of networks that the Dokodemo accepts.
+   * Deprecated. Use networks.
+   *
+   * @deprecated
+   */
+  networkList:
+    | NetworkList
+    | undefined;
   /** List of networks that the Dokodemo accepts. */
   networks: Network[];
+  /** @deprecated */
+  timeout: number;
   followRedirect: boolean;
   userLevel: number;
 }
@@ -27,7 +38,9 @@ function createBaseConfig(): Config {
     $type: "xray.proxy.dokodemo.Config",
     address: undefined,
     port: 0,
+    networkList: undefined,
     networks: [],
+    timeout: 0,
     followRedirect: false,
     userLevel: 0,
   };
@@ -43,11 +56,17 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
     if (message.port !== 0) {
       writer.uint32(16).uint32(message.port);
     }
+    if (message.networkList !== undefined) {
+      NetworkList.encode(message.networkList, writer.uint32(26).fork()).join();
+    }
     writer.uint32(58).fork();
     for (const v of message.networks) {
       writer.int32(v);
     }
     writer.join();
+    if (message.timeout !== 0) {
+      writer.uint32(32).uint32(message.timeout);
+    }
     if (message.followRedirect !== false) {
       writer.uint32(40).bool(message.followRedirect);
     }
@@ -80,6 +99,14 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
           message.port = reader.uint32();
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.networkList = NetworkList.decode(reader, reader.uint32());
+          continue;
+        }
         case 7: {
           if (tag === 56) {
             message.networks.push(reader.int32() as any);
@@ -97,6 +124,14 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
           }
 
           break;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.timeout = reader.uint32();
+          continue;
         }
         case 5: {
           if (tag !== 40) {
@@ -128,7 +163,9 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
       $type: Config.$type,
       address: isSet(object.address) ? IPOrDomain.fromJSON(object.address) : undefined,
       port: isSet(object.port) ? globalThis.Number(object.port) : 0,
+      networkList: isSet(object.networkList) ? NetworkList.fromJSON(object.networkList) : undefined,
       networks: globalThis.Array.isArray(object?.networks) ? object.networks.map((e: any) => networkFromJSON(e)) : [],
+      timeout: isSet(object.timeout) ? globalThis.Number(object.timeout) : 0,
       followRedirect: isSet(object.followRedirect) ? globalThis.Boolean(object.followRedirect) : false,
       userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
     };
@@ -142,8 +179,14 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
     if (message.port !== 0) {
       obj.port = Math.round(message.port);
     }
+    if (message.networkList !== undefined) {
+      obj.networkList = NetworkList.toJSON(message.networkList);
+    }
     if (message.networks?.length) {
       obj.networks = message.networks.map((e) => networkToJSON(e));
+    }
+    if (message.timeout !== 0) {
+      obj.timeout = Math.round(message.timeout);
     }
     if (message.followRedirect !== false) {
       obj.followRedirect = message.followRedirect;
@@ -163,7 +206,11 @@ export const Config: MessageFns<Config, "xray.proxy.dokodemo.Config"> = {
       ? IPOrDomain.fromPartial(object.address)
       : undefined;
     message.port = object.port ?? 0;
+    message.networkList = (object.networkList !== undefined && object.networkList !== null)
+      ? NetworkList.fromPartial(object.networkList)
+      : undefined;
     message.networks = object.networks?.map((e) => e) || [];
+    message.timeout = object.timeout ?? 0;
     message.followRedirect = object.followRedirect ?? false;
     message.userLevel = object.userLevel ?? 0;
     return message;

@@ -2,42 +2,36 @@
 // versions:
 //   protoc-gen-ts_proto  v2.2.7
 //   protoc               v5.28.3
-// source: proxy/dns/config.proto
+// source: transport/global/config.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Endpoint } from "../../common/net/destination";
 import { messageTypeRegistry } from "../../typeRegistry";
+import { TransportConfig } from "../internet/config";
 
-export const protobufPackage = "xray.proxy.dns";
+export const protobufPackage = "xray.transport";
 
+/**
+ * Global transport settings. This affects all type of connections that go
+ * through Xray. Deprecated. Use each settings in StreamConfig.
+ *
+ * @deprecated
+ */
 export interface Config {
-  $type: "xray.proxy.dns.Config";
-  /**
-   * Server is the DNS server address. If specified, this address overrides the
-   * original one.
-   */
-  server: Endpoint | undefined;
-  userLevel: number;
-  nonIPQuery: string;
+  $type: "xray.transport.Config";
+  transportSettings: TransportConfig[];
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.dns.Config", server: undefined, userLevel: 0, nonIPQuery: "" };
+  return { $type: "xray.transport.Config", transportSettings: [] };
 }
 
-export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
-  $type: "xray.proxy.dns.Config" as const,
+export const Config: MessageFns<Config, "xray.transport.Config"> = {
+  $type: "xray.transport.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.server !== undefined) {
-      Endpoint.encode(message.server, writer.uint32(10).fork()).join();
-    }
-    if (message.userLevel !== 0) {
-      writer.uint32(16).uint32(message.userLevel);
-    }
-    if (message.nonIPQuery !== "") {
-      writer.uint32(26).string(message.nonIPQuery);
+    for (const v of message.transportSettings) {
+      TransportConfig.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -54,23 +48,7 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.server = Endpoint.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.userLevel = reader.uint32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.nonIPQuery = reader.string();
+          message.transportSettings.push(TransportConfig.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -85,22 +63,16 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      server: isSet(object.server) ? Endpoint.fromJSON(object.server) : undefined,
-      userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
-      nonIPQuery: isSet(object.nonIPQuery) ? globalThis.String(object.nonIPQuery) : "",
+      transportSettings: globalThis.Array.isArray(object?.transportSettings)
+        ? object.transportSettings.map((e: any) => TransportConfig.fromJSON(e))
+        : [],
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.server !== undefined) {
-      obj.server = Endpoint.toJSON(message.server);
-    }
-    if (message.userLevel !== 0) {
-      obj.userLevel = Math.round(message.userLevel);
-    }
-    if (message.nonIPQuery !== "") {
-      obj.nonIPQuery = message.nonIPQuery;
+    if (message.transportSettings?.length) {
+      obj.transportSettings = message.transportSettings.map((e) => TransportConfig.toJSON(e));
     }
     return obj;
   },
@@ -110,11 +82,7 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.server = (object.server !== undefined && object.server !== null)
-      ? Endpoint.fromPartial(object.server)
-      : undefined;
-    message.userLevel = object.userLevel ?? 0;
-    message.nonIPQuery = object.nonIPQuery ?? "";
+    message.transportSettings = object.transportSettings?.map((e) => TransportConfig.fromPartial(e)) || [];
     return message;
   },
 };
@@ -128,10 +96,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
 
 export interface MessageFns<T, V extends string> {
   readonly $type: V;

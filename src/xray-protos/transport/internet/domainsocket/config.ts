@@ -2,42 +2,50 @@
 // versions:
 //   protoc-gen-ts_proto  v2.2.7
 //   protoc               v5.28.3
-// source: proxy/dns/config.proto
+// source: transport/internet/domainsocket/config.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Endpoint } from "../../common/net/destination";
-import { messageTypeRegistry } from "../../typeRegistry";
+import { messageTypeRegistry } from "../../../typeRegistry";
 
-export const protobufPackage = "xray.proxy.dns";
+export const protobufPackage = "xray.transport.internet.domainsocket";
 
 export interface Config {
-  $type: "xray.proxy.dns.Config";
+  $type: "xray.transport.internet.domainsocket.Config";
   /**
-   * Server is the DNS server address. If specified, this address overrides the
-   * original one.
+   * Path of the domain socket. This overrides the IP/Port parameter from
+   * upstream caller.
    */
-  server: Endpoint | undefined;
-  userLevel: number;
-  nonIPQuery: string;
+  path: string;
+  /**
+   * Abstract speicifies whether to use abstract namespace or not.
+   * Traditionally Unix domain socket is file system based. Abstract domain
+   * socket can be used without acquiring file lock.
+   */
+  abstract: boolean;
+  /**
+   * Some apps, eg. haproxy, use the full length of sockaddr_un.sun_path to
+   * connect(2) or bind(2) when using abstract UDS.
+   */
+  padding: boolean;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.dns.Config", server: undefined, userLevel: 0, nonIPQuery: "" };
+  return { $type: "xray.transport.internet.domainsocket.Config", path: "", abstract: false, padding: false };
 }
 
-export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
-  $type: "xray.proxy.dns.Config" as const,
+export const Config: MessageFns<Config, "xray.transport.internet.domainsocket.Config"> = {
+  $type: "xray.transport.internet.domainsocket.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.server !== undefined) {
-      Endpoint.encode(message.server, writer.uint32(10).fork()).join();
+    if (message.path !== "") {
+      writer.uint32(10).string(message.path);
     }
-    if (message.userLevel !== 0) {
-      writer.uint32(16).uint32(message.userLevel);
+    if (message.abstract !== false) {
+      writer.uint32(16).bool(message.abstract);
     }
-    if (message.nonIPQuery !== "") {
-      writer.uint32(26).string(message.nonIPQuery);
+    if (message.padding !== false) {
+      writer.uint32(24).bool(message.padding);
     }
     return writer;
   },
@@ -54,7 +62,7 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.server = Endpoint.decode(reader, reader.uint32());
+          message.path = reader.string();
           continue;
         }
         case 2: {
@@ -62,15 +70,15 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.userLevel = reader.uint32();
+          message.abstract = reader.bool();
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.nonIPQuery = reader.string();
+          message.padding = reader.bool();
           continue;
         }
       }
@@ -85,22 +93,22 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      server: isSet(object.server) ? Endpoint.fromJSON(object.server) : undefined,
-      userLevel: isSet(object.userLevel) ? globalThis.Number(object.userLevel) : 0,
-      nonIPQuery: isSet(object.nonIPQuery) ? globalThis.String(object.nonIPQuery) : "",
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
+      abstract: isSet(object.abstract) ? globalThis.Boolean(object.abstract) : false,
+      padding: isSet(object.padding) ? globalThis.Boolean(object.padding) : false,
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.server !== undefined) {
-      obj.server = Endpoint.toJSON(message.server);
+    if (message.path !== "") {
+      obj.path = message.path;
     }
-    if (message.userLevel !== 0) {
-      obj.userLevel = Math.round(message.userLevel);
+    if (message.abstract !== false) {
+      obj.abstract = message.abstract;
     }
-    if (message.nonIPQuery !== "") {
-      obj.nonIPQuery = message.nonIPQuery;
+    if (message.padding !== false) {
+      obj.padding = message.padding;
     }
     return obj;
   },
@@ -110,11 +118,9 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.server = (object.server !== undefined && object.server !== null)
-      ? Endpoint.fromPartial(object.server)
-      : undefined;
-    message.userLevel = object.userLevel ?? 0;
-    message.nonIPQuery = object.nonIPQuery ?? "";
+    message.path = object.path ?? "";
+    message.abstract = object.abstract ?? false;
+    message.padding = object.padding ?? false;
     return message;
   },
 };

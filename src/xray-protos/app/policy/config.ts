@@ -35,7 +35,6 @@ export interface Policy_Stats {
   $type: "xray.app.policy.Policy.Stats";
   userUplink: boolean;
   userDownlink: boolean;
-  userOnline: boolean;
 }
 
 export interface Policy_Buffer {
@@ -362,7 +361,7 @@ export const Policy_Timeout: MessageFns<Policy_Timeout, "xray.app.policy.Policy.
 messageTypeRegistry.set(Policy_Timeout.$type, Policy_Timeout);
 
 function createBasePolicy_Stats(): Policy_Stats {
-  return { $type: "xray.app.policy.Policy.Stats", userUplink: false, userDownlink: false, userOnline: false };
+  return { $type: "xray.app.policy.Policy.Stats", userUplink: false, userDownlink: false };
 }
 
 export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stats"> = {
@@ -374,9 +373,6 @@ export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stat
     }
     if (message.userDownlink !== false) {
       writer.uint32(16).bool(message.userDownlink);
-    }
-    if (message.userOnline !== false) {
-      writer.uint32(24).bool(message.userOnline);
     }
     return writer;
   },
@@ -404,14 +400,6 @@ export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stat
           message.userDownlink = reader.bool();
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.userOnline = reader.bool();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -426,7 +414,6 @@ export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stat
       $type: Policy_Stats.$type,
       userUplink: isSet(object.userUplink) ? globalThis.Boolean(object.userUplink) : false,
       userDownlink: isSet(object.userDownlink) ? globalThis.Boolean(object.userDownlink) : false,
-      userOnline: isSet(object.userOnline) ? globalThis.Boolean(object.userOnline) : false,
     };
   },
 
@@ -438,9 +425,6 @@ export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stat
     if (message.userDownlink !== false) {
       obj.userDownlink = message.userDownlink;
     }
-    if (message.userOnline !== false) {
-      obj.userOnline = message.userOnline;
-    }
     return obj;
   },
 
@@ -451,7 +435,6 @@ export const Policy_Stats: MessageFns<Policy_Stats, "xray.app.policy.Policy.Stat
     const message = createBasePolicy_Stats();
     message.userUplink = object.userUplink ?? false;
     message.userDownlink = object.userDownlink ?? false;
-    message.userOnline = object.userOnline ?? false;
     return message;
   },
 };

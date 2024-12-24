@@ -67,7 +67,7 @@ export interface Config {
   $type: "xray.transport.internet.headers.http.Config";
   /**
    * Settings for authenticating requests. If not set, client side will not send
-   * authentication header, and server side will bypass authentication.
+   * authenication header, and server side will bypass authentication.
    */
   request:
     | RequestConfig

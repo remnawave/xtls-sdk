@@ -12,7 +12,7 @@ export const protobufPackage = "xray.transport.internet.grpc.encoding";
 
 export interface Config {
   $type: "xray.transport.internet.grpc.encoding.Config";
-  authority: string;
+  host: string;
   serviceName: string;
   multiMode: boolean;
   idleTimeout: number;
@@ -25,7 +25,7 @@ export interface Config {
 function createBaseConfig(): Config {
   return {
     $type: "xray.transport.internet.grpc.encoding.Config",
-    authority: "",
+    host: "",
     serviceName: "",
     multiMode: false,
     idleTimeout: 0,
@@ -40,8 +40,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.grpc.encoding.C
   $type: "xray.transport.internet.grpc.encoding.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.authority !== "") {
-      writer.uint32(10).string(message.authority);
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
     }
     if (message.serviceName !== "") {
       writer.uint32(18).string(message.serviceName);
@@ -79,7 +79,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.grpc.encoding.C
             break;
           }
 
-          message.authority = reader.string();
+          message.host = reader.string();
           continue;
         }
         case 2: {
@@ -150,7 +150,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.grpc.encoding.C
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      authority: isSet(object.authority) ? globalThis.String(object.authority) : "",
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
       serviceName: isSet(object.serviceName) ? globalThis.String(object.serviceName) : "",
       multiMode: isSet(object.multiMode) ? globalThis.Boolean(object.multiMode) : false,
       idleTimeout: isSet(object.idleTimeout) ? globalThis.Number(object.idleTimeout) : 0,
@@ -163,8 +163,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.grpc.encoding.C
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.authority !== "") {
-      obj.authority = message.authority;
+    if (message.host !== "") {
+      obj.host = message.host;
     }
     if (message.serviceName !== "") {
       obj.serviceName = message.serviceName;
@@ -195,7 +195,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.grpc.encoding.C
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.authority = object.authority ?? "";
+    message.host = object.host ?? "";
     message.serviceName = object.serviceName ?? "";
     message.multiMode = object.multiMode ?? false;
     message.idleTimeout = object.idleTimeout ?? 0;

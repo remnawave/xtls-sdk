@@ -20,6 +20,8 @@ export interface Account {
 /** Config for HTTP proxy server. */
 export interface ServerConfig {
   $type: "xray.proxy.http.ServerConfig";
+  /** @deprecated */
+  timeout: number;
   accounts: { [key: string]: string };
   allowTransparent: boolean;
   userLevel: number;
@@ -127,13 +129,16 @@ export const Account: MessageFns<Account, "xray.proxy.http.Account"> = {
 messageTypeRegistry.set(Account.$type, Account);
 
 function createBaseServerConfig(): ServerConfig {
-  return { $type: "xray.proxy.http.ServerConfig", accounts: {}, allowTransparent: false, userLevel: 0 };
+  return { $type: "xray.proxy.http.ServerConfig", timeout: 0, accounts: {}, allowTransparent: false, userLevel: 0 };
 }
 
 export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.http.ServerConfig"> = {
   $type: "xray.proxy.http.ServerConfig" as const,
 
   encode(message: ServerConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timeout !== 0) {
+      writer.uint32(8).uint32(message.timeout);
+    }
     Object.entries(message.accounts).forEach(([key, value]) => {
       ServerConfig_AccountsEntry.encode(
         { $type: "xray.proxy.http.ServerConfig.AccountsEntry", key: key as any, value },
@@ -156,6 +161,14 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.http.ServerConfi
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.timeout = reader.uint32();
+          continue;
+        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -195,6 +208,7 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.http.ServerConfi
   fromJSON(object: any): ServerConfig {
     return {
       $type: ServerConfig.$type,
+      timeout: isSet(object.timeout) ? globalThis.Number(object.timeout) : 0,
       accounts: isObject(object.accounts)
         ? Object.entries(object.accounts).reduce<{ [key: string]: string }>((acc, [key, value]) => {
           acc[key] = String(value);
@@ -208,6 +222,9 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.http.ServerConfi
 
   toJSON(message: ServerConfig): unknown {
     const obj: any = {};
+    if (message.timeout !== 0) {
+      obj.timeout = Math.round(message.timeout);
+    }
     if (message.accounts) {
       const entries = Object.entries(message.accounts);
       if (entries.length > 0) {
@@ -231,6 +248,7 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.http.ServerConfi
   },
   fromPartial(object: DeepPartial<ServerConfig>): ServerConfig {
     const message = createBaseServerConfig();
+    message.timeout = object.timeout ?? 0;
     message.accounts = Object.entries(object.accounts ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
         acc[key] = globalThis.String(value);

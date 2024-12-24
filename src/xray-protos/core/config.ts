@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { TypedMessage } from "../common/serial/typed_message";
+import { Config as Config1 } from "../transport/global/config";
 import { messageTypeRegistry } from "../typeRegistry";
 
 export const protobufPackage = "xray.core";
@@ -30,6 +31,16 @@ export interface Config {
    * through common.RegisterConfig.
    */
   app: TypedMessage[];
+  /**
+   * Transport settings.
+   * Deprecated. Each inbound and outbound should choose their own transport
+   * config. Date to remove: 2020-01-13
+   *
+   * @deprecated
+   */
+  transport:
+    | Config1
+    | undefined;
   /**
    * Configuration for extensions. The config may not work if corresponding
    * extension is not loaded into Xray. Xray will ignore such config during
@@ -74,7 +85,7 @@ export interface OutboundHandlerConfig {
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.core.Config", inbound: [], outbound: [], app: [], extension: [] };
+  return { $type: "xray.core.Config", inbound: [], outbound: [], app: [], transport: undefined, extension: [] };
 }
 
 export const Config: MessageFns<Config, "xray.core.Config"> = {
@@ -89,6 +100,9 @@ export const Config: MessageFns<Config, "xray.core.Config"> = {
     }
     for (const v of message.app) {
       TypedMessage.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.transport !== undefined) {
+      Config1.encode(message.transport, writer.uint32(42).fork()).join();
     }
     for (const v of message.extension) {
       TypedMessage.encode(v!, writer.uint32(50).fork()).join();
@@ -127,6 +141,14 @@ export const Config: MessageFns<Config, "xray.core.Config"> = {
           message.app.push(TypedMessage.decode(reader, reader.uint32()));
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.transport = Config1.decode(reader, reader.uint32());
+          continue;
+        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -154,6 +176,7 @@ export const Config: MessageFns<Config, "xray.core.Config"> = {
         ? object.outbound.map((e: any) => OutboundHandlerConfig.fromJSON(e))
         : [],
       app: globalThis.Array.isArray(object?.app) ? object.app.map((e: any) => TypedMessage.fromJSON(e)) : [],
+      transport: isSet(object.transport) ? Config1.fromJSON(object.transport) : undefined,
       extension: globalThis.Array.isArray(object?.extension)
         ? object.extension.map((e: any) => TypedMessage.fromJSON(e))
         : [],
@@ -171,6 +194,9 @@ export const Config: MessageFns<Config, "xray.core.Config"> = {
     if (message.app?.length) {
       obj.app = message.app.map((e) => TypedMessage.toJSON(e));
     }
+    if (message.transport !== undefined) {
+      obj.transport = Config1.toJSON(message.transport);
+    }
     if (message.extension?.length) {
       obj.extension = message.extension.map((e) => TypedMessage.toJSON(e));
     }
@@ -185,6 +211,9 @@ export const Config: MessageFns<Config, "xray.core.Config"> = {
     message.inbound = object.inbound?.map((e) => InboundHandlerConfig.fromPartial(e)) || [];
     message.outbound = object.outbound?.map((e) => OutboundHandlerConfig.fromPartial(e)) || [];
     message.app = object.app?.map((e) => TypedMessage.fromPartial(e)) || [];
+    message.transport = (object.transport !== undefined && object.transport !== null)
+      ? Config1.fromPartial(object.transport)
+      : undefined;
     message.extension = object.extension?.map((e) => TypedMessage.fromPartial(e)) || [];
     return message;
   },

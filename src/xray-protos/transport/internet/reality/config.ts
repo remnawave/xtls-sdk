@@ -28,7 +28,6 @@ export interface Config {
   shortId: Uint8Array;
   spiderX: string;
   spiderY: number[];
-  masterKeyLog: string;
 }
 
 function createBaseConfig(): Config {
@@ -50,7 +49,6 @@ function createBaseConfig(): Config {
     shortId: new Uint8Array(0),
     spiderX: "",
     spiderY: [],
-    masterKeyLog: "",
   };
 }
 
@@ -108,9 +106,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
       writer.int64(v);
     }
     writer.join();
-    if (message.masterKeyLog !== "") {
-      writer.uint32(218).string(message.masterKeyLog);
-    }
     return writer;
   },
 
@@ -259,14 +254,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
 
           break;
         }
-        case 27: {
-          if (tag !== 218) {
-            break;
-          }
-
-          message.masterKeyLog = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -297,7 +284,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
       shortId: isSet(object.shortId) ? bytesFromBase64(object.shortId) : new Uint8Array(0),
       spiderX: isSet(object.spiderX) ? globalThis.String(object.spiderX) : "",
       spiderY: globalThis.Array.isArray(object?.spiderY) ? object.spiderY.map((e: any) => globalThis.Number(e)) : [],
-      masterKeyLog: isSet(object.masterKeyLog) ? globalThis.String(object.masterKeyLog) : "",
     };
   },
 
@@ -351,9 +337,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
     if (message.spiderY?.length) {
       obj.spiderY = message.spiderY.map((e) => Math.round(e));
     }
-    if (message.masterKeyLog !== "") {
-      obj.masterKeyLog = message.masterKeyLog;
-    }
     return obj;
   },
 
@@ -378,7 +361,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
     message.shortId = object.shortId ?? new Uint8Array(0);
     message.spiderX = object.spiderX ?? "";
     message.spiderY = object.spiderY?.map((e) => e) || [];
-    message.masterKeyLog = object.masterKeyLog ?? "";
     return message;
   },
 };

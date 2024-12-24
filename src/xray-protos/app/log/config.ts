@@ -64,7 +64,6 @@ export interface Config {
   accessLogType: LogType;
   accessLogPath: string;
   enableDnsLog: boolean;
-  maskAddress: string;
 }
 
 function createBaseConfig(): Config {
@@ -76,7 +75,6 @@ function createBaseConfig(): Config {
     accessLogType: 0,
     accessLogPath: "",
     enableDnsLog: false,
-    maskAddress: "",
   };
 }
 
@@ -101,9 +99,6 @@ export const Config: MessageFns<Config, "xray.app.log.Config"> = {
     }
     if (message.enableDnsLog !== false) {
       writer.uint32(48).bool(message.enableDnsLog);
-    }
-    if (message.maskAddress !== "") {
-      writer.uint32(58).string(message.maskAddress);
     }
     return writer;
   },
@@ -163,14 +158,6 @@ export const Config: MessageFns<Config, "xray.app.log.Config"> = {
           message.enableDnsLog = reader.bool();
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
-            break;
-          }
-
-          message.maskAddress = reader.string();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -189,7 +176,6 @@ export const Config: MessageFns<Config, "xray.app.log.Config"> = {
       accessLogType: isSet(object.accessLogType) ? logTypeFromJSON(object.accessLogType) : 0,
       accessLogPath: isSet(object.accessLogPath) ? globalThis.String(object.accessLogPath) : "",
       enableDnsLog: isSet(object.enableDnsLog) ? globalThis.Boolean(object.enableDnsLog) : false,
-      maskAddress: isSet(object.maskAddress) ? globalThis.String(object.maskAddress) : "",
     };
   },
 
@@ -213,9 +199,6 @@ export const Config: MessageFns<Config, "xray.app.log.Config"> = {
     if (message.enableDnsLog !== false) {
       obj.enableDnsLog = message.enableDnsLog;
     }
-    if (message.maskAddress !== "") {
-      obj.maskAddress = message.maskAddress;
-    }
     return obj;
   },
 
@@ -230,7 +213,6 @@ export const Config: MessageFns<Config, "xray.app.log.Config"> = {
     message.accessLogType = object.accessLogType ?? 0;
     message.accessLogPath = object.accessLogPath ?? "";
     message.enableDnsLog = object.enableDnsLog ?? false;
-    message.maskAddress = object.maskAddress ?? "";
     return message;
   },
 };

@@ -761,14 +761,6 @@ export const StatsServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    getStatsOnline: {
-      name: "GetStatsOnline",
-      requestType: GetStatsRequest,
-      requestStream: false,
-      responseType: GetStatsResponse,
-      responseStream: false,
-      options: {},
-    },
     queryStats: {
       name: "QueryStats",
       requestType: QueryStatsRequest,
@@ -790,10 +782,6 @@ export const StatsServiceDefinition = {
 
 export interface StatsServiceImplementation<CallContextExt = {}> {
   getStats(request: GetStatsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<GetStatsResponse>>;
-  getStatsOnline(
-    request: GetStatsRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetStatsResponse>>;
   queryStats(
     request: QueryStatsRequest,
     context: CallContext & CallContextExt,
@@ -803,10 +791,6 @@ export interface StatsServiceImplementation<CallContextExt = {}> {
 
 export interface StatsServiceClient<CallOptionsExt = {}> {
   getStats(request: DeepPartial<GetStatsRequest>, options?: CallOptions & CallOptionsExt): Promise<GetStatsResponse>;
-  getStatsOnline(
-    request: DeepPartial<GetStatsRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetStatsResponse>;
   queryStats(
     request: DeepPartial<QueryStatsRequest>,
     options?: CallOptions & CallOptionsExt,

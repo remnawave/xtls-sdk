@@ -6,7 +6,7 @@ import * as tar from 'tar';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const VERSION = '24.11.11';
+const VERSION = '1.8.6';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
 const TARGET_URL = `https://github.com/XTLS/Xray-core/archive/refs/tags/v${VERSION}.tar.gz`;
 

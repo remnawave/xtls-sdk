@@ -52,22 +52,6 @@ export interface AlterInboundResponse {
   $type: "xray.app.proxyman.command.AlterInboundResponse";
 }
 
-export interface GetInboundUserRequest {
-  $type: "xray.app.proxyman.command.GetInboundUserRequest";
-  tag: string;
-  email: string;
-}
-
-export interface GetInboundUserResponse {
-  $type: "xray.app.proxyman.command.GetInboundUserResponse";
-  users: User[];
-}
-
-export interface GetInboundUsersCountResponse {
-  $type: "xray.app.proxyman.command.GetInboundUsersCountResponse";
-  count: number;
-}
-
 export interface AddOutboundRequest {
   $type: "xray.app.proxyman.command.AddOutboundRequest";
   outbound: OutboundHandlerConfig | undefined;
@@ -582,226 +566,6 @@ export const AlterInboundResponse: MessageFns<AlterInboundResponse, "xray.app.pr
 
 messageTypeRegistry.set(AlterInboundResponse.$type, AlterInboundResponse);
 
-function createBaseGetInboundUserRequest(): GetInboundUserRequest {
-  return { $type: "xray.app.proxyman.command.GetInboundUserRequest", tag: "", email: "" };
-}
-
-export const GetInboundUserRequest: MessageFns<
-  GetInboundUserRequest,
-  "xray.app.proxyman.command.GetInboundUserRequest"
-> = {
-  $type: "xray.app.proxyman.command.GetInboundUserRequest" as const,
-
-  encode(message: GetInboundUserRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.tag !== "") {
-      writer.uint32(10).string(message.tag);
-    }
-    if (message.email !== "") {
-      writer.uint32(18).string(message.email);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetInboundUserRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetInboundUserRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.tag = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.email = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetInboundUserRequest {
-    return {
-      $type: GetInboundUserRequest.$type,
-      tag: isSet(object.tag) ? globalThis.String(object.tag) : "",
-      email: isSet(object.email) ? globalThis.String(object.email) : "",
-    };
-  },
-
-  toJSON(message: GetInboundUserRequest): unknown {
-    const obj: any = {};
-    if (message.tag !== "") {
-      obj.tag = message.tag;
-    }
-    if (message.email !== "") {
-      obj.email = message.email;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetInboundUserRequest>): GetInboundUserRequest {
-    return GetInboundUserRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetInboundUserRequest>): GetInboundUserRequest {
-    const message = createBaseGetInboundUserRequest();
-    message.tag = object.tag ?? "";
-    message.email = object.email ?? "";
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GetInboundUserRequest.$type, GetInboundUserRequest);
-
-function createBaseGetInboundUserResponse(): GetInboundUserResponse {
-  return { $type: "xray.app.proxyman.command.GetInboundUserResponse", users: [] };
-}
-
-export const GetInboundUserResponse: MessageFns<
-  GetInboundUserResponse,
-  "xray.app.proxyman.command.GetInboundUserResponse"
-> = {
-  $type: "xray.app.proxyman.command.GetInboundUserResponse" as const,
-
-  encode(message: GetInboundUserResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.users) {
-      User.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetInboundUserResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetInboundUserResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.users.push(User.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetInboundUserResponse {
-    return {
-      $type: GetInboundUserResponse.$type,
-      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: GetInboundUserResponse): unknown {
-    const obj: any = {};
-    if (message.users?.length) {
-      obj.users = message.users.map((e) => User.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetInboundUserResponse>): GetInboundUserResponse {
-    return GetInboundUserResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetInboundUserResponse>): GetInboundUserResponse {
-    const message = createBaseGetInboundUserResponse();
-    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GetInboundUserResponse.$type, GetInboundUserResponse);
-
-function createBaseGetInboundUsersCountResponse(): GetInboundUsersCountResponse {
-  return { $type: "xray.app.proxyman.command.GetInboundUsersCountResponse", count: 0 };
-}
-
-export const GetInboundUsersCountResponse: MessageFns<
-  GetInboundUsersCountResponse,
-  "xray.app.proxyman.command.GetInboundUsersCountResponse"
-> = {
-  $type: "xray.app.proxyman.command.GetInboundUsersCountResponse" as const,
-
-  encode(message: GetInboundUsersCountResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.count !== 0) {
-      writer.uint32(8).int64(message.count);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetInboundUsersCountResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetInboundUsersCountResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.count = longToNumber(reader.int64());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetInboundUsersCountResponse {
-    return {
-      $type: GetInboundUsersCountResponse.$type,
-      count: isSet(object.count) ? globalThis.Number(object.count) : 0,
-    };
-  },
-
-  toJSON(message: GetInboundUsersCountResponse): unknown {
-    const obj: any = {};
-    if (message.count !== 0) {
-      obj.count = Math.round(message.count);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GetInboundUsersCountResponse>): GetInboundUsersCountResponse {
-    return GetInboundUsersCountResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GetInboundUsersCountResponse>): GetInboundUsersCountResponse {
-    const message = createBaseGetInboundUsersCountResponse();
-    message.count = object.count ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GetInboundUsersCountResponse.$type, GetInboundUsersCountResponse);
-
 function createBaseAddOutboundRequest(): AddOutboundRequest {
   return { $type: "xray.app.proxyman.command.AddOutboundRequest", outbound: undefined };
 }
@@ -1241,22 +1005,6 @@ export const HandlerServiceDefinition = {
       responseStream: false,
       options: {},
     },
-    getInboundUsers: {
-      name: "GetInboundUsers",
-      requestType: GetInboundUserRequest,
-      requestStream: false,
-      responseType: GetInboundUserResponse,
-      responseStream: false,
-      options: {},
-    },
-    getInboundUsersCount: {
-      name: "GetInboundUsersCount",
-      requestType: GetInboundUserRequest,
-      requestStream: false,
-      responseType: GetInboundUsersCountResponse,
-      responseStream: false,
-      options: {},
-    },
     addOutbound: {
       name: "AddOutbound",
       requestType: AddOutboundRequest,
@@ -1297,14 +1045,6 @@ export interface HandlerServiceImplementation<CallContextExt = {}> {
     request: AlterInboundRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<AlterInboundResponse>>;
-  getInboundUsers(
-    request: GetInboundUserRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetInboundUserResponse>>;
-  getInboundUsersCount(
-    request: GetInboundUserRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetInboundUsersCountResponse>>;
   addOutbound(
     request: AddOutboundRequest,
     context: CallContext & CallContextExt,
@@ -1332,14 +1072,6 @@ export interface HandlerServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<AlterInboundRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<AlterInboundResponse>;
-  getInboundUsers(
-    request: DeepPartial<GetInboundUserRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetInboundUserResponse>;
-  getInboundUsersCount(
-    request: DeepPartial<GetInboundUserRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetInboundUsersCountResponse>;
   addOutbound(
     request: DeepPartial<AddOutboundRequest>,
     options?: CallOptions & CallOptionsExt,
@@ -1361,17 +1093,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function longToNumber(int64: { toString(): string }): number {
-  const num = globalThis.Number(int64.toString());
-  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
-    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
-  }
-  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
-    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
-  }
-  return num;
-}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

@@ -16,8 +16,6 @@ export interface Config {
   $type: "xray.app.commander.Config";
   /** Tag of the outbound handler that handles grpc connections. */
   tag: string;
-  /** Network address of commander grpc service. */
-  listen: string;
   /**
    * Services that supported by this server. All services must implement Service
    * interface.
@@ -31,7 +29,7 @@ export interface ReflectionConfig {
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.app.commander.Config", tag: "", listen: "", service: [] };
+  return { $type: "xray.app.commander.Config", tag: "", service: [] };
 }
 
 export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
@@ -40,9 +38,6 @@ export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.tag !== "") {
       writer.uint32(10).string(message.tag);
-    }
-    if (message.listen !== "") {
-      writer.uint32(26).string(message.listen);
     }
     for (const v of message.service) {
       TypedMessage.encode(v!, writer.uint32(18).fork()).join();
@@ -63,14 +58,6 @@ export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
           }
 
           message.tag = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.listen = reader.string();
           continue;
         }
         case 2: {
@@ -94,7 +81,6 @@ export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
     return {
       $type: Config.$type,
       tag: isSet(object.tag) ? globalThis.String(object.tag) : "",
-      listen: isSet(object.listen) ? globalThis.String(object.listen) : "",
       service: globalThis.Array.isArray(object?.service)
         ? object.service.map((e: any) => TypedMessage.fromJSON(e))
         : [],
@@ -105,9 +91,6 @@ export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
     const obj: any = {};
     if (message.tag !== "") {
       obj.tag = message.tag;
-    }
-    if (message.listen !== "") {
-      obj.listen = message.listen;
     }
     if (message.service?.length) {
       obj.service = message.service.map((e) => TypedMessage.toJSON(e));
@@ -121,7 +104,6 @@ export const Config: MessageFns<Config, "xray.app.commander.Config"> = {
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
     message.tag = object.tag ?? "";
-    message.listen = object.listen ?? "";
     message.service = object.service?.map((e) => TypedMessage.fromPartial(e)) || [];
     return message;
   },
