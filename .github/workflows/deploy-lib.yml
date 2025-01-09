@@ -2,7 +2,7 @@ name: Deploy lib
 on:
   push:
     tags:
-    - '*'
+      - '*'
 jobs:
   send-start-deploy-telegram-message:
     name: Send Telegram message
@@ -24,6 +24,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -40,7 +43,7 @@ jobs:
 
       - name: Publish package on NPM
         working-directory: './'
-        run: npm publish --access public
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

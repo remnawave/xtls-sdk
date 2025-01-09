@@ -18,6 +18,7 @@ export interface Config {
   header: { [key: string]: string };
   acceptProxyProtocol: boolean;
   ed: number;
+  heartbeatPeriod: number;
 }
 
 export interface Config_HeaderEntry {
@@ -34,6 +35,7 @@ function createBaseConfig(): Config {
     header: {},
     acceptProxyProtocol: false,
     ed: 0,
+    heartbeatPeriod: 0,
   };
 }
 
@@ -59,6 +61,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
     }
     if (message.ed !== 0) {
       writer.uint32(40).uint32(message.ed);
+    }
+    if (message.heartbeatPeriod !== 0) {
+      writer.uint32(48).uint32(message.heartbeatPeriod);
     }
     return writer;
   },
@@ -113,6 +118,14 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
           message.ed = reader.uint32();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.heartbeatPeriod = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -135,6 +148,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
         : {},
       acceptProxyProtocol: isSet(object.acceptProxyProtocol) ? globalThis.Boolean(object.acceptProxyProtocol) : false,
       ed: isSet(object.ed) ? globalThis.Number(object.ed) : 0,
+      heartbeatPeriod: isSet(object.heartbeatPeriod) ? globalThis.Number(object.heartbeatPeriod) : 0,
     };
   },
 
@@ -161,6 +175,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
     if (message.ed !== 0) {
       obj.ed = Math.round(message.ed);
     }
+    if (message.heartbeatPeriod !== 0) {
+      obj.heartbeatPeriod = Math.round(message.heartbeatPeriod);
+    }
     return obj;
   },
 
@@ -179,6 +196,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.websocket.Confi
     }, {});
     message.acceptProxyProtocol = object.acceptProxyProtocol ?? false;
     message.ed = object.ed ?? 0;
+    message.heartbeatPeriod = object.heartbeatPeriod ?? 0;
     return message;
   },
 };
