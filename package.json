@@ -9,9 +9,7 @@
   ],
   "scripts": {
     "prepublish": "rm -rf build && tsc",
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
@@ -21,8 +19,8 @@
   "bugs": {
     "url": "https://github.com/remnawave/xtls-sdk/issues"
   },
-  "author": "Remnawave",
-  "license": "MIT",
+  "author": "Remnawave <https://github.com/remnawave>",
+  "license": "AGPL-3.0-only",
   "keywords": [
     "xtls",
     "grpc",
