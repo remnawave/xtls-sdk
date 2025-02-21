@@ -48,7 +48,7 @@ export class RouterService {
                 type: 'field',
             };
 
-            const response = await this.client.addRule({
+            await this.client.addRule({
                 config: createTypedMessage(Config, {
                     rule: [routingRule],
                 }),
