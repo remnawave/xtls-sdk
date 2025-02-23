@@ -3,4 +3,5 @@ export interface IAddSourceIpRule {
     ip: string;
     outbound: string;
     append: boolean;
+    inboundTag?: string;
 }
