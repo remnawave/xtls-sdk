@@ -33,7 +33,6 @@ export class RouterService {
      * @param dto.outbound - Outbound tag to route matched traffic
      * @param dto.ip - Source IP address to match
      * @param dto.append - Whether to append the rule or replace existing rules
-     * @param dto.inbound - Optional inbound tag to match
      * @returns Promise resolving to response indicating success or failure
      */
     public async addSrcIpRule(
@@ -44,7 +43,6 @@ export class RouterService {
                 ruleTag: dto.ruleTag,
                 outboundTag: dto.outbound,
                 source: [dto.ip],
-                inboundTag: dto.inbound ? [dto.inbound] : [''],
                 type: 'field',
             };
 
