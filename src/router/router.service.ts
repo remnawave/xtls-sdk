@@ -5,11 +5,12 @@ import {
 } from '../xray-protos/app/router/command/command';
 import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
 import { ISdkResponse } from '../common/types/sdk-response';
-import { Config } from '../xray-protos/app/router/config';
+import { CIDR, Config, GeoIP } from '../xray-protos/app/router/config';
 import { IAddSourceIpRule, IRemoveRuleByRuleTag } from './interfaces';
 import { AddSourceIpRuleResponseModel } from './models';
 import { ROUTER_ERRORS } from '../common/errors/router/router.errors';
 import { RemoveRuleByRuleTagResponseModel } from './models/remove-rule-by-rule-tag';
+import ipaddr from 'ipaddr.js';
 
 /**
  * Service for managing routing rules in XRAY/XTLS
@@ -34,23 +35,32 @@ export class RouterService {
      * @param dto.ip - Source IP address to match
      * @param dto.append - Whether to append the rule or replace existing rules
      * @returns Promise resolving to response indicating success or failure
-     * @param dto.inboundTag - Optional inbound tag to match
      */
     public async addSrcIpRule(
         dto: IAddSourceIpRule,
     ): Promise<ISdkResponse<AddSourceIpRuleResponseModel>> {
         try {
-            const routingRule = {
-                ruleTag: dto.ruleTag,
-                outboundTag: dto.outbound,
-                source: [dto.ip],
-                inboundTag: dto.inboundTag ? [dto.inboundTag] : [],
-                type: 'field',
-            };
+            const ip = ipaddr.parse(dto.ip);
+            const prefix = ip.kind() === 'ipv6' ? 128 : 32;
 
             await this.client.addRule({
                 config: createTypedMessage(Config, {
-                    rule: [routingRule],
+                    rule: [
+                        {
+                            ruleTag: dto.ruleTag,
+                            tag: dto.outbound,
+                            sourceGeoip: [
+                                GeoIP.fromPartial({
+                                    cidr: [
+                                        CIDR.fromPartial({
+                                            ip: new Uint8Array(ip.toByteArray()),
+                                            prefix,
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        },
+                    ],
                 }),
                 shouldAppend: dto.append,
             });
