@@ -93,22 +93,26 @@ export interface Config {
   fingerprint: string;
   rejectUnknownSni: boolean;
   /**
-   * @Document A pinned certificate chain sha256 hash.
-   * @Document If the server's hash does not match this value, the connection will be aborted.
-   * @Document This value replace allow_insecure.
+   * @Document Some certificate chain sha256 hashes.
+   * @Document After normal validation or allow_insecure, if the server's cert chain hash does not match any of these values, the connection will be aborted.
    * @Critical
    */
   pinnedPeerCertificateChainSha256: Uint8Array[];
   /**
-   * @Document A pinned certificate public key sha256 hash.
-   * @Document If the server's public key hash does not match this value, the connection will be aborted.
-   * @Document This value replace allow_insecure.
+   * @Document Some certificate public key sha256 hashes.
+   * @Document After normal validation (required), if the verified cert's public key hash does not match any of these values, the connection will be aborted.
    * @Critical
    */
   pinnedPeerCertificatePublicKeySha256: Uint8Array[];
   masterKeyLog: string;
   /** Lists of string as CurvePreferences values. */
   curvePreferences: string[];
+  /**
+   * @Document Replaces server_name to verify the peer cert.
+   * @Document After allow_insecure (automatically), if the server's cert can't be verified by any of these names, pinned_peer_certificate_chain_sha256 will be tried.
+   * @Critical
+   */
+  verifyPeerCertInNames: string[];
 }
 
 function createBaseCertificate(): Certificate {
@@ -316,6 +320,7 @@ function createBaseConfig(): Config {
     pinnedPeerCertificatePublicKeySha256: [],
     masterKeyLog: "",
     curvePreferences: [],
+    verifyPeerCertInNames: [],
   };
 }
 
@@ -367,6 +372,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     }
     for (const v of message.curvePreferences) {
       writer.uint32(130).string(v!);
+    }
+    for (const v of message.verifyPeerCertInNames) {
+      writer.uint32(138).string(v!);
     }
     return writer;
   },
@@ -498,6 +506,14 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
           message.curvePreferences.push(reader.string());
           continue;
         }
+        case 17: {
+          if (tag !== 138) {
+            break;
+          }
+
+          message.verifyPeerCertInNames.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -536,6 +552,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
       masterKeyLog: isSet(object.masterKeyLog) ? globalThis.String(object.masterKeyLog) : "",
       curvePreferences: globalThis.Array.isArray(object?.curvePreferences)
         ? object.curvePreferences.map((e: any) => globalThis.String(e))
+        : [],
+      verifyPeerCertInNames: globalThis.Array.isArray(object?.verifyPeerCertInNames)
+        ? object.verifyPeerCertInNames.map((e: any) => globalThis.String(e))
         : [],
     };
   },
@@ -589,6 +608,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     if (message.curvePreferences?.length) {
       obj.curvePreferences = message.curvePreferences;
     }
+    if (message.verifyPeerCertInNames?.length) {
+      obj.verifyPeerCertInNames = message.verifyPeerCertInNames;
+    }
     return obj;
   },
 
@@ -612,6 +634,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     message.pinnedPeerCertificatePublicKeySha256 = object.pinnedPeerCertificatePublicKeySha256?.map((e) => e) || [];
     message.masterKeyLog = object.masterKeyLog ?? "";
     message.curvePreferences = object.curvePreferences?.map((e) => e) || [];
+    message.verifyPeerCertInNames = object.verifyPeerCertInNames?.map((e) => e) || [];
     return message;
   },
 };

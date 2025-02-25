@@ -59,6 +59,18 @@ export interface SysStatsResponse {
   Uptime: number;
 }
 
+export interface GetStatsOnlineIpListResponse {
+  $type: "xray.app.stats.command.GetStatsOnlineIpListResponse";
+  name: string;
+  ips: { [key: string]: number };
+}
+
+export interface GetStatsOnlineIpListResponse_IpsEntry {
+  $type: "xray.app.stats.command.GetStatsOnlineIpListResponse.IpsEntry";
+  key: string;
+  value: number;
+}
+
 export interface Config {
   $type: "xray.app.stats.command.Config";
 }
@@ -701,6 +713,197 @@ export const SysStatsResponse: MessageFns<SysStatsResponse, "xray.app.stats.comm
 
 messageTypeRegistry.set(SysStatsResponse.$type, SysStatsResponse);
 
+function createBaseGetStatsOnlineIpListResponse(): GetStatsOnlineIpListResponse {
+  return { $type: "xray.app.stats.command.GetStatsOnlineIpListResponse", name: "", ips: {} };
+}
+
+export const GetStatsOnlineIpListResponse: MessageFns<
+  GetStatsOnlineIpListResponse,
+  "xray.app.stats.command.GetStatsOnlineIpListResponse"
+> = {
+  $type: "xray.app.stats.command.GetStatsOnlineIpListResponse" as const,
+
+  encode(message: GetStatsOnlineIpListResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    Object.entries(message.ips).forEach(([key, value]) => {
+      GetStatsOnlineIpListResponse_IpsEntry.encode({
+        $type: "xray.app.stats.command.GetStatsOnlineIpListResponse.IpsEntry",
+        key: key as any,
+        value,
+      }, writer.uint32(18).fork()).join();
+    });
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetStatsOnlineIpListResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetStatsOnlineIpListResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const entry2 = GetStatsOnlineIpListResponse_IpsEntry.decode(reader, reader.uint32());
+          if (entry2.value !== undefined) {
+            message.ips[entry2.key] = entry2.value;
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetStatsOnlineIpListResponse {
+    return {
+      $type: GetStatsOnlineIpListResponse.$type,
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      ips: isObject(object.ips)
+        ? Object.entries(object.ips).reduce<{ [key: string]: number }>((acc, [key, value]) => {
+          acc[key] = Number(value);
+          return acc;
+        }, {})
+        : {},
+    };
+  },
+
+  toJSON(message: GetStatsOnlineIpListResponse): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.ips) {
+      const entries = Object.entries(message.ips);
+      if (entries.length > 0) {
+        obj.ips = {};
+        entries.forEach(([k, v]) => {
+          obj.ips[k] = Math.round(v);
+        });
+      }
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetStatsOnlineIpListResponse>): GetStatsOnlineIpListResponse {
+    return GetStatsOnlineIpListResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetStatsOnlineIpListResponse>): GetStatsOnlineIpListResponse {
+    const message = createBaseGetStatsOnlineIpListResponse();
+    message.name = object.name ?? "";
+    message.ips = Object.entries(object.ips ?? {}).reduce<{ [key: string]: number }>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = globalThis.Number(value);
+      }
+      return acc;
+    }, {});
+    return message;
+  },
+};
+
+messageTypeRegistry.set(GetStatsOnlineIpListResponse.$type, GetStatsOnlineIpListResponse);
+
+function createBaseGetStatsOnlineIpListResponse_IpsEntry(): GetStatsOnlineIpListResponse_IpsEntry {
+  return { $type: "xray.app.stats.command.GetStatsOnlineIpListResponse.IpsEntry", key: "", value: 0 };
+}
+
+export const GetStatsOnlineIpListResponse_IpsEntry: MessageFns<
+  GetStatsOnlineIpListResponse_IpsEntry,
+  "xray.app.stats.command.GetStatsOnlineIpListResponse.IpsEntry"
+> = {
+  $type: "xray.app.stats.command.GetStatsOnlineIpListResponse.IpsEntry" as const,
+
+  encode(message: GetStatsOnlineIpListResponse_IpsEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int64(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetStatsOnlineIpListResponse_IpsEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetStatsOnlineIpListResponse_IpsEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetStatsOnlineIpListResponse_IpsEntry {
+    return {
+      $type: GetStatsOnlineIpListResponse_IpsEntry.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: GetStatsOnlineIpListResponse_IpsEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetStatsOnlineIpListResponse_IpsEntry>): GetStatsOnlineIpListResponse_IpsEntry {
+    return GetStatsOnlineIpListResponse_IpsEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetStatsOnlineIpListResponse_IpsEntry>): GetStatsOnlineIpListResponse_IpsEntry {
+    const message = createBaseGetStatsOnlineIpListResponse_IpsEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(GetStatsOnlineIpListResponse_IpsEntry.$type, GetStatsOnlineIpListResponse_IpsEntry);
+
 function createBaseConfig(): Config {
   return { $type: "xray.app.stats.command.Config" };
 }
@@ -785,6 +988,14 @@ export const StatsServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getStatsOnlineIpList: {
+      name: "GetStatsOnlineIpList",
+      requestType: GetStatsRequest,
+      requestStream: false,
+      responseType: GetStatsOnlineIpListResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -799,6 +1010,10 @@ export interface StatsServiceImplementation<CallContextExt = {}> {
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<QueryStatsResponse>>;
   getSysStats(request: SysStatsRequest, context: CallContext & CallContextExt): Promise<DeepPartial<SysStatsResponse>>;
+  getStatsOnlineIpList(
+    request: GetStatsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetStatsOnlineIpListResponse>>;
 }
 
 export interface StatsServiceClient<CallOptionsExt = {}> {
@@ -812,6 +1027,10 @@ export interface StatsServiceClient<CallOptionsExt = {}> {
     options?: CallOptions & CallOptionsExt,
   ): Promise<QueryStatsResponse>;
   getSysStats(request: DeepPartial<SysStatsRequest>, options?: CallOptions & CallOptionsExt): Promise<SysStatsResponse>;
+  getStatsOnlineIpList(
+    request: DeepPartial<GetStatsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetStatsOnlineIpListResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
@@ -831,6 +1050,10 @@ function longToNumber(int64: { toString(): string }): number {
     throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
   }
   return num;
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

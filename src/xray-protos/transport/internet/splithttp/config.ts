@@ -22,8 +22,8 @@ export interface XmuxConfig {
   maxConcurrency: RangeConfig | undefined;
   maxConnections: RangeConfig | undefined;
   cMaxReuseTimes: RangeConfig | undefined;
-  cMaxLifetimeMs: RangeConfig | undefined;
   hMaxRequestTimes: RangeConfig | undefined;
+  hMaxReusableSecs: RangeConfig | undefined;
   hKeepAlivePeriod: number;
 }
 
@@ -39,6 +39,7 @@ export interface Config {
   scMaxEachPostBytes: RangeConfig | undefined;
   scMinPostsIntervalMs: RangeConfig | undefined;
   scMaxBufferedPosts: number;
+  scStreamUpServerSecs: RangeConfig | undefined;
   xmux: XmuxConfig | undefined;
   downloadSettings: StreamConfig | undefined;
 }
@@ -136,8 +137,8 @@ function createBaseXmuxConfig(): XmuxConfig {
     maxConcurrency: undefined,
     maxConnections: undefined,
     cMaxReuseTimes: undefined,
-    cMaxLifetimeMs: undefined,
     hMaxRequestTimes: undefined,
+    hMaxReusableSecs: undefined,
     hKeepAlivePeriod: 0,
   };
 }
@@ -155,11 +156,11 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
     if (message.cMaxReuseTimes !== undefined) {
       RangeConfig.encode(message.cMaxReuseTimes, writer.uint32(26).fork()).join();
     }
-    if (message.cMaxLifetimeMs !== undefined) {
-      RangeConfig.encode(message.cMaxLifetimeMs, writer.uint32(34).fork()).join();
-    }
     if (message.hMaxRequestTimes !== undefined) {
-      RangeConfig.encode(message.hMaxRequestTimes, writer.uint32(42).fork()).join();
+      RangeConfig.encode(message.hMaxRequestTimes, writer.uint32(34).fork()).join();
+    }
+    if (message.hMaxReusableSecs !== undefined) {
+      RangeConfig.encode(message.hMaxReusableSecs, writer.uint32(42).fork()).join();
     }
     if (message.hKeepAlivePeriod !== 0) {
       writer.uint32(48).int64(message.hKeepAlivePeriod);
@@ -203,7 +204,7 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
             break;
           }
 
-          message.cMaxLifetimeMs = RangeConfig.decode(reader, reader.uint32());
+          message.hMaxRequestTimes = RangeConfig.decode(reader, reader.uint32());
           continue;
         }
         case 5: {
@@ -211,7 +212,7 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
             break;
           }
 
-          message.hMaxRequestTimes = RangeConfig.decode(reader, reader.uint32());
+          message.hMaxReusableSecs = RangeConfig.decode(reader, reader.uint32());
           continue;
         }
         case 6: {
@@ -237,8 +238,8 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
       maxConcurrency: isSet(object.maxConcurrency) ? RangeConfig.fromJSON(object.maxConcurrency) : undefined,
       maxConnections: isSet(object.maxConnections) ? RangeConfig.fromJSON(object.maxConnections) : undefined,
       cMaxReuseTimes: isSet(object.cMaxReuseTimes) ? RangeConfig.fromJSON(object.cMaxReuseTimes) : undefined,
-      cMaxLifetimeMs: isSet(object.cMaxLifetimeMs) ? RangeConfig.fromJSON(object.cMaxLifetimeMs) : undefined,
       hMaxRequestTimes: isSet(object.hMaxRequestTimes) ? RangeConfig.fromJSON(object.hMaxRequestTimes) : undefined,
+      hMaxReusableSecs: isSet(object.hMaxReusableSecs) ? RangeConfig.fromJSON(object.hMaxReusableSecs) : undefined,
       hKeepAlivePeriod: isSet(object.hKeepAlivePeriod) ? globalThis.Number(object.hKeepAlivePeriod) : 0,
     };
   },
@@ -254,11 +255,11 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
     if (message.cMaxReuseTimes !== undefined) {
       obj.cMaxReuseTimes = RangeConfig.toJSON(message.cMaxReuseTimes);
     }
-    if (message.cMaxLifetimeMs !== undefined) {
-      obj.cMaxLifetimeMs = RangeConfig.toJSON(message.cMaxLifetimeMs);
-    }
     if (message.hMaxRequestTimes !== undefined) {
       obj.hMaxRequestTimes = RangeConfig.toJSON(message.hMaxRequestTimes);
+    }
+    if (message.hMaxReusableSecs !== undefined) {
+      obj.hMaxReusableSecs = RangeConfig.toJSON(message.hMaxReusableSecs);
     }
     if (message.hKeepAlivePeriod !== 0) {
       obj.hKeepAlivePeriod = Math.round(message.hKeepAlivePeriod);
@@ -280,11 +281,11 @@ export const XmuxConfig: MessageFns<XmuxConfig, "xray.transport.internet.splitht
     message.cMaxReuseTimes = (object.cMaxReuseTimes !== undefined && object.cMaxReuseTimes !== null)
       ? RangeConfig.fromPartial(object.cMaxReuseTimes)
       : undefined;
-    message.cMaxLifetimeMs = (object.cMaxLifetimeMs !== undefined && object.cMaxLifetimeMs !== null)
-      ? RangeConfig.fromPartial(object.cMaxLifetimeMs)
-      : undefined;
     message.hMaxRequestTimes = (object.hMaxRequestTimes !== undefined && object.hMaxRequestTimes !== null)
       ? RangeConfig.fromPartial(object.hMaxRequestTimes)
+      : undefined;
+    message.hMaxReusableSecs = (object.hMaxReusableSecs !== undefined && object.hMaxReusableSecs !== null)
+      ? RangeConfig.fromPartial(object.hMaxReusableSecs)
       : undefined;
     message.hKeepAlivePeriod = object.hKeepAlivePeriod ?? 0;
     return message;
@@ -306,6 +307,7 @@ function createBaseConfig(): Config {
     scMaxEachPostBytes: undefined,
     scMinPostsIntervalMs: undefined,
     scMaxBufferedPosts: 0,
+    scStreamUpServerSecs: undefined,
     xmux: undefined,
     downloadSettings: undefined,
   };
@@ -349,11 +351,14 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.scMaxBufferedPosts !== 0) {
       writer.uint32(80).int64(message.scMaxBufferedPosts);
     }
+    if (message.scStreamUpServerSecs !== undefined) {
+      RangeConfig.encode(message.scStreamUpServerSecs, writer.uint32(90).fork()).join();
+    }
     if (message.xmux !== undefined) {
-      XmuxConfig.encode(message.xmux, writer.uint32(90).fork()).join();
+      XmuxConfig.encode(message.xmux, writer.uint32(98).fork()).join();
     }
     if (message.downloadSettings !== undefined) {
-      StreamConfig.encode(message.downloadSettings, writer.uint32(98).fork()).join();
+      StreamConfig.encode(message.downloadSettings, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -453,11 +458,19 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
             break;
           }
 
-          message.xmux = XmuxConfig.decode(reader, reader.uint32());
+          message.scStreamUpServerSecs = RangeConfig.decode(reader, reader.uint32());
           continue;
         }
         case 12: {
           if (tag !== 98) {
+            break;
+          }
+
+          message.xmux = XmuxConfig.decode(reader, reader.uint32());
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
             break;
           }
 
@@ -495,6 +508,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
         ? RangeConfig.fromJSON(object.scMinPostsIntervalMs)
         : undefined,
       scMaxBufferedPosts: isSet(object.scMaxBufferedPosts) ? globalThis.Number(object.scMaxBufferedPosts) : 0,
+      scStreamUpServerSecs: isSet(object.scStreamUpServerSecs)
+        ? RangeConfig.fromJSON(object.scStreamUpServerSecs)
+        : undefined,
       xmux: isSet(object.xmux) ? XmuxConfig.fromJSON(object.xmux) : undefined,
       downloadSettings: isSet(object.downloadSettings) ? StreamConfig.fromJSON(object.downloadSettings) : undefined,
     };
@@ -538,6 +554,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.scMaxBufferedPosts !== 0) {
       obj.scMaxBufferedPosts = Math.round(message.scMaxBufferedPosts);
     }
+    if (message.scStreamUpServerSecs !== undefined) {
+      obj.scStreamUpServerSecs = RangeConfig.toJSON(message.scStreamUpServerSecs);
+    }
     if (message.xmux !== undefined) {
       obj.xmux = XmuxConfig.toJSON(message.xmux);
     }
@@ -573,6 +592,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
       ? RangeConfig.fromPartial(object.scMinPostsIntervalMs)
       : undefined;
     message.scMaxBufferedPosts = object.scMaxBufferedPosts ?? 0;
+    message.scStreamUpServerSecs = (object.scStreamUpServerSecs !== undefined && object.scStreamUpServerSecs !== null)
+      ? RangeConfig.fromPartial(object.scStreamUpServerSecs)
+      : undefined;
     message.xmux = (object.xmux !== undefined && object.xmux !== null)
       ? XmuxConfig.fromPartial(object.xmux)
       : undefined;

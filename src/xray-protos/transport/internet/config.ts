@@ -162,7 +162,7 @@ export interface SocketConfig {
   tcpWindowClamp: number;
   tcpUserTimeout: number;
   tcpMaxSeg: number;
-  tcpNoDelay: boolean;
+  penetrate: boolean;
   tcpMptcp: boolean;
   customSockopt: CustomSockopt[];
 }
@@ -684,7 +684,7 @@ function createBaseSocketConfig(): SocketConfig {
     tcpWindowClamp: 0,
     tcpUserTimeout: 0,
     tcpMaxSeg: 0,
-    tcpNoDelay: false,
+    penetrate: false,
     tcpMptcp: false,
     customSockopt: [],
   };
@@ -745,8 +745,8 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.tcpMaxSeg !== 0) {
       writer.uint32(136).int32(message.tcpMaxSeg);
     }
-    if (message.tcpNoDelay !== false) {
-      writer.uint32(144).bool(message.tcpNoDelay);
+    if (message.penetrate !== false) {
+      writer.uint32(144).bool(message.penetrate);
     }
     if (message.tcpMptcp !== false) {
       writer.uint32(152).bool(message.tcpMptcp);
@@ -905,7 +905,7 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
             break;
           }
 
-          message.tcpNoDelay = reader.bool();
+          message.penetrate = reader.bool();
           continue;
         }
         case 19: {
@@ -955,7 +955,7 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
       tcpWindowClamp: isSet(object.tcpWindowClamp) ? globalThis.Number(object.tcpWindowClamp) : 0,
       tcpUserTimeout: isSet(object.tcpUserTimeout) ? globalThis.Number(object.tcpUserTimeout) : 0,
       tcpMaxSeg: isSet(object.tcpMaxSeg) ? globalThis.Number(object.tcpMaxSeg) : 0,
-      tcpNoDelay: isSet(object.tcpNoDelay) ? globalThis.Boolean(object.tcpNoDelay) : false,
+      penetrate: isSet(object.penetrate) ? globalThis.Boolean(object.penetrate) : false,
       tcpMptcp: isSet(object.tcpMptcp) ? globalThis.Boolean(object.tcpMptcp) : false,
       customSockopt: globalThis.Array.isArray(object?.customSockopt)
         ? object.customSockopt.map((e: any) => CustomSockopt.fromJSON(e))
@@ -1016,8 +1016,8 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.tcpMaxSeg !== 0) {
       obj.tcpMaxSeg = Math.round(message.tcpMaxSeg);
     }
-    if (message.tcpNoDelay !== false) {
-      obj.tcpNoDelay = message.tcpNoDelay;
+    if (message.penetrate !== false) {
+      obj.penetrate = message.penetrate;
     }
     if (message.tcpMptcp !== false) {
       obj.tcpMptcp = message.tcpMptcp;
@@ -1050,7 +1050,7 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     message.tcpWindowClamp = object.tcpWindowClamp ?? 0;
     message.tcpUserTimeout = object.tcpUserTimeout ?? 0;
     message.tcpMaxSeg = object.tcpMaxSeg ?? 0;
-    message.tcpNoDelay = object.tcpNoDelay ?? false;
+    message.penetrate = object.penetrate ?? false;
     message.tcpMptcp = object.tcpMptcp ?? false;
     message.customSockopt = object.customSockopt?.map((e) => CustomSockopt.fromPartial(e)) || [];
     return message;

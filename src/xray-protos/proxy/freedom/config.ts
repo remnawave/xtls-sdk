@@ -32,7 +32,7 @@ export interface Noise {
   lengthMax: number;
   delayMin: number;
   delayMax: number;
-  strNoise: Uint8Array;
+  packet: Uint8Array;
 }
 
 export interface Config {
@@ -359,7 +359,7 @@ function createBaseNoise(): Noise {
     lengthMax: 0,
     delayMin: 0,
     delayMax: 0,
-    strNoise: new Uint8Array(0),
+    packet: new Uint8Array(0),
   };
 }
 
@@ -379,8 +379,8 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     if (message.delayMax !== 0) {
       writer.uint32(32).uint64(message.delayMax);
     }
-    if (message.strNoise.length !== 0) {
-      writer.uint32(42).bytes(message.strNoise);
+    if (message.packet.length !== 0) {
+      writer.uint32(42).bytes(message.packet);
     }
     return writer;
   },
@@ -429,7 +429,7 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
             break;
           }
 
-          message.strNoise = reader.bytes();
+          message.packet = reader.bytes();
           continue;
         }
       }
@@ -448,7 +448,7 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
       lengthMax: isSet(object.lengthMax) ? globalThis.Number(object.lengthMax) : 0,
       delayMin: isSet(object.delayMin) ? globalThis.Number(object.delayMin) : 0,
       delayMax: isSet(object.delayMax) ? globalThis.Number(object.delayMax) : 0,
-      strNoise: isSet(object.strNoise) ? bytesFromBase64(object.strNoise) : new Uint8Array(0),
+      packet: isSet(object.packet) ? bytesFromBase64(object.packet) : new Uint8Array(0),
     };
   },
 
@@ -466,8 +466,8 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     if (message.delayMax !== 0) {
       obj.delayMax = Math.round(message.delayMax);
     }
-    if (message.strNoise.length !== 0) {
-      obj.strNoise = base64FromBytes(message.strNoise);
+    if (message.packet.length !== 0) {
+      obj.packet = base64FromBytes(message.packet);
     }
     return obj;
   },
@@ -481,7 +481,7 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     message.lengthMax = object.lengthMax ?? 0;
     message.delayMin = object.delayMin ?? 0;
     message.delayMax = object.delayMax ?? 0;
-    message.strNoise = object.strNoise ?? new Uint8Array(0);
+    message.packet = object.packet ?? new Uint8Array(0);
     return message;
   },
 };

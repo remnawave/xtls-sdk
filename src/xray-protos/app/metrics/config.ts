@@ -15,10 +15,11 @@ export interface Config {
   $type: "xray.app.metrics.Config";
   /** Tag of the outbound handler that handles metrics http connections. */
   tag: string;
+  listen: string;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.app.metrics.Config", tag: "" };
+  return { $type: "xray.app.metrics.Config", tag: "", listen: "" };
 }
 
 export const Config: MessageFns<Config, "xray.app.metrics.Config"> = {
@@ -27,6 +28,9 @@ export const Config: MessageFns<Config, "xray.app.metrics.Config"> = {
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.tag !== "") {
       writer.uint32(10).string(message.tag);
+    }
+    if (message.listen !== "") {
+      writer.uint32(18).string(message.listen);
     }
     return writer;
   },
@@ -46,6 +50,14 @@ export const Config: MessageFns<Config, "xray.app.metrics.Config"> = {
           message.tag = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.listen = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -56,13 +68,20 @@ export const Config: MessageFns<Config, "xray.app.metrics.Config"> = {
   },
 
   fromJSON(object: any): Config {
-    return { $type: Config.$type, tag: isSet(object.tag) ? globalThis.String(object.tag) : "" };
+    return {
+      $type: Config.$type,
+      tag: isSet(object.tag) ? globalThis.String(object.tag) : "",
+      listen: isSet(object.listen) ? globalThis.String(object.listen) : "",
+    };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
     if (message.tag !== "") {
       obj.tag = message.tag;
+    }
+    if (message.listen !== "") {
+      obj.listen = message.listen;
     }
     return obj;
   },
@@ -73,6 +92,7 @@ export const Config: MessageFns<Config, "xray.app.metrics.Config"> = {
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
     message.tag = object.tag ?? "";
+    message.listen = object.listen ?? "";
     return message;
   },
 };
