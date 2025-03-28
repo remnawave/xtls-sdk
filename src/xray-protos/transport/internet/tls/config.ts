@@ -100,7 +100,7 @@ export interface Config {
   pinnedPeerCertificateChainSha256: Uint8Array[];
   /**
    * @Document Some certificate public key sha256 hashes.
-   * @Document After normal validation (required), if the verified cert's public key hash does not match any of these values, the connection will be aborted.
+   * @Document After normal validation (required), if one of certs in verified chain matches one of these values, the connection will be eventually accepted.
    * @Critical
    */
   pinnedPeerCertificatePublicKeySha256: Uint8Array[];

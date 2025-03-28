@@ -99,6 +99,69 @@ export function domainStrategyToJSON(object: DomainStrategy): string {
   }
 }
 
+export enum AddressPortStrategy {
+  None = 0,
+  SrvPortOnly = 1,
+  SrvAddressOnly = 2,
+  SrvPortAndAddress = 3,
+  TxtPortOnly = 4,
+  TxtAddressOnly = 5,
+  TxtPortAndAddress = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function addressPortStrategyFromJSON(object: any): AddressPortStrategy {
+  switch (object) {
+    case 0:
+    case "None":
+      return AddressPortStrategy.None;
+    case 1:
+    case "SrvPortOnly":
+      return AddressPortStrategy.SrvPortOnly;
+    case 2:
+    case "SrvAddressOnly":
+      return AddressPortStrategy.SrvAddressOnly;
+    case 3:
+    case "SrvPortAndAddress":
+      return AddressPortStrategy.SrvPortAndAddress;
+    case 4:
+    case "TxtPortOnly":
+      return AddressPortStrategy.TxtPortOnly;
+    case 5:
+    case "TxtAddressOnly":
+      return AddressPortStrategy.TxtAddressOnly;
+    case 6:
+    case "TxtPortAndAddress":
+      return AddressPortStrategy.TxtPortAndAddress;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return AddressPortStrategy.UNRECOGNIZED;
+  }
+}
+
+export function addressPortStrategyToJSON(object: AddressPortStrategy): string {
+  switch (object) {
+    case AddressPortStrategy.None:
+      return "None";
+    case AddressPortStrategy.SrvPortOnly:
+      return "SrvPortOnly";
+    case AddressPortStrategy.SrvAddressOnly:
+      return "SrvAddressOnly";
+    case AddressPortStrategy.SrvPortAndAddress:
+      return "SrvPortAndAddress";
+    case AddressPortStrategy.TxtPortOnly:
+      return "TxtPortOnly";
+    case AddressPortStrategy.TxtAddressOnly:
+      return "TxtAddressOnly";
+    case AddressPortStrategy.TxtPortAndAddress:
+      return "TxtPortAndAddress";
+    case AddressPortStrategy.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface TransportConfig {
   $type: "xray.transport.internet.TransportConfig";
   /** Transport protocol name. */
@@ -165,6 +228,7 @@ export interface SocketConfig {
   penetrate: boolean;
   tcpMptcp: boolean;
   customSockopt: CustomSockopt[];
+  addressPortStrategy: AddressPortStrategy;
 }
 
 export enum SocketConfig_TProxyMode {
@@ -687,6 +751,7 @@ function createBaseSocketConfig(): SocketConfig {
     penetrate: false,
     tcpMptcp: false,
     customSockopt: [],
+    addressPortStrategy: 0,
   };
 }
 
@@ -753,6 +818,9 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     }
     for (const v of message.customSockopt) {
       CustomSockopt.encode(v!, writer.uint32(162).fork()).join();
+    }
+    if (message.addressPortStrategy !== 0) {
+      writer.uint32(168).int32(message.addressPortStrategy);
     }
     return writer;
   },
@@ -924,6 +992,14 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
           message.customSockopt.push(CustomSockopt.decode(reader, reader.uint32()));
           continue;
         }
+        case 21: {
+          if (tag !== 168) {
+            break;
+          }
+
+          message.addressPortStrategy = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -960,6 +1036,9 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
       customSockopt: globalThis.Array.isArray(object?.customSockopt)
         ? object.customSockopt.map((e: any) => CustomSockopt.fromJSON(e))
         : [],
+      addressPortStrategy: isSet(object.addressPortStrategy)
+        ? addressPortStrategyFromJSON(object.addressPortStrategy)
+        : 0,
     };
   },
 
@@ -1025,6 +1104,9 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.customSockopt?.length) {
       obj.customSockopt = message.customSockopt.map((e) => CustomSockopt.toJSON(e));
     }
+    if (message.addressPortStrategy !== 0) {
+      obj.addressPortStrategy = addressPortStrategyToJSON(message.addressPortStrategy);
+    }
     return obj;
   },
 
@@ -1053,6 +1135,7 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     message.penetrate = object.penetrate ?? false;
     message.tcpMptcp = object.tcpMptcp ?? false;
     message.customSockopt = object.customSockopt?.map((e) => CustomSockopt.fromPartial(e)) || [];
+    message.addressPortStrategy = object.addressPortStrategy ?? 0;
     return message;
   },
 };
