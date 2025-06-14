@@ -192,6 +192,8 @@ export interface ProxyConfig {
 
 export interface CustomSockopt {
   $type: "xray.transport.internet.CustomSockopt";
+  system: string;
+  network: string;
   level: string;
   opt: string;
   value: string;
@@ -229,6 +231,7 @@ export interface SocketConfig {
   tcpMptcp: boolean;
   customSockopt: CustomSockopt[];
   addressPortStrategy: AddressPortStrategy;
+  happyEyeballs: HappyEyeballsConfig | undefined;
 }
 
 export enum SocketConfig_TProxyMode {
@@ -271,6 +274,14 @@ export function socketConfig_TProxyModeToJSON(object: SocketConfig_TProxyMode): 
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface HappyEyeballsConfig {
+  $type: "xray.transport.internet.HappyEyeballsConfig";
+  prioritizeIpv6: boolean;
+  interleave: number;
+  tryDelayMs: number;
+  maxConcurrentTry: number;
 }
 
 function createBaseTransportConfig(): TransportConfig {
@@ -616,24 +627,38 @@ export const ProxyConfig: MessageFns<ProxyConfig, "xray.transport.internet.Proxy
 messageTypeRegistry.set(ProxyConfig.$type, ProxyConfig);
 
 function createBaseCustomSockopt(): CustomSockopt {
-  return { $type: "xray.transport.internet.CustomSockopt", level: "", opt: "", value: "", type: "" };
+  return {
+    $type: "xray.transport.internet.CustomSockopt",
+    system: "",
+    network: "",
+    level: "",
+    opt: "",
+    value: "",
+    type: "",
+  };
 }
 
 export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.CustomSockopt"> = {
   $type: "xray.transport.internet.CustomSockopt" as const,
 
   encode(message: CustomSockopt, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.system !== "") {
+      writer.uint32(10).string(message.system);
+    }
+    if (message.network !== "") {
+      writer.uint32(18).string(message.network);
+    }
     if (message.level !== "") {
-      writer.uint32(10).string(message.level);
+      writer.uint32(26).string(message.level);
     }
     if (message.opt !== "") {
-      writer.uint32(18).string(message.opt);
+      writer.uint32(34).string(message.opt);
     }
     if (message.value !== "") {
-      writer.uint32(26).string(message.value);
+      writer.uint32(42).string(message.value);
     }
     if (message.type !== "") {
-      writer.uint32(34).string(message.type);
+      writer.uint32(50).string(message.type);
     }
     return writer;
   },
@@ -650,7 +675,7 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
             break;
           }
 
-          message.level = reader.string();
+          message.system = reader.string();
           continue;
         }
         case 2: {
@@ -658,7 +683,7 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
             break;
           }
 
-          message.opt = reader.string();
+          message.network = reader.string();
           continue;
         }
         case 3: {
@@ -666,11 +691,27 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
             break;
           }
 
-          message.value = reader.string();
+          message.level = reader.string();
           continue;
         }
         case 4: {
           if (tag !== 34) {
+            break;
+          }
+
+          message.opt = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -689,6 +730,8 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
   fromJSON(object: any): CustomSockopt {
     return {
       $type: CustomSockopt.$type,
+      system: isSet(object.system) ? globalThis.String(object.system) : "",
+      network: isSet(object.network) ? globalThis.String(object.network) : "",
       level: isSet(object.level) ? globalThis.String(object.level) : "",
       opt: isSet(object.opt) ? globalThis.String(object.opt) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
@@ -698,6 +741,12 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
 
   toJSON(message: CustomSockopt): unknown {
     const obj: any = {};
+    if (message.system !== "") {
+      obj.system = message.system;
+    }
+    if (message.network !== "") {
+      obj.network = message.network;
+    }
     if (message.level !== "") {
       obj.level = message.level;
     }
@@ -718,6 +767,8 @@ export const CustomSockopt: MessageFns<CustomSockopt, "xray.transport.internet.C
   },
   fromPartial(object: DeepPartial<CustomSockopt>): CustomSockopt {
     const message = createBaseCustomSockopt();
+    message.system = object.system ?? "";
+    message.network = object.network ?? "";
     message.level = object.level ?? "";
     message.opt = object.opt ?? "";
     message.value = object.value ?? "";
@@ -752,6 +803,7 @@ function createBaseSocketConfig(): SocketConfig {
     tcpMptcp: false,
     customSockopt: [],
     addressPortStrategy: 0,
+    happyEyeballs: undefined,
   };
 }
 
@@ -821,6 +873,9 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     }
     if (message.addressPortStrategy !== 0) {
       writer.uint32(168).int32(message.addressPortStrategy);
+    }
+    if (message.happyEyeballs !== undefined) {
+      HappyEyeballsConfig.encode(message.happyEyeballs, writer.uint32(178).fork()).join();
     }
     return writer;
   },
@@ -1000,6 +1055,14 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
           message.addressPortStrategy = reader.int32() as any;
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.happyEyeballs = HappyEyeballsConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1039,6 +1102,7 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
       addressPortStrategy: isSet(object.addressPortStrategy)
         ? addressPortStrategyFromJSON(object.addressPortStrategy)
         : 0,
+      happyEyeballs: isSet(object.happyEyeballs) ? HappyEyeballsConfig.fromJSON(object.happyEyeballs) : undefined,
     };
   },
 
@@ -1107,6 +1171,9 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.addressPortStrategy !== 0) {
       obj.addressPortStrategy = addressPortStrategyToJSON(message.addressPortStrategy);
     }
+    if (message.happyEyeballs !== undefined) {
+      obj.happyEyeballs = HappyEyeballsConfig.toJSON(message.happyEyeballs);
+    }
     return obj;
   },
 
@@ -1136,11 +1203,133 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     message.tcpMptcp = object.tcpMptcp ?? false;
     message.customSockopt = object.customSockopt?.map((e) => CustomSockopt.fromPartial(e)) || [];
     message.addressPortStrategy = object.addressPortStrategy ?? 0;
+    message.happyEyeballs = (object.happyEyeballs !== undefined && object.happyEyeballs !== null)
+      ? HappyEyeballsConfig.fromPartial(object.happyEyeballs)
+      : undefined;
     return message;
   },
 };
 
 messageTypeRegistry.set(SocketConfig.$type, SocketConfig);
+
+function createBaseHappyEyeballsConfig(): HappyEyeballsConfig {
+  return {
+    $type: "xray.transport.internet.HappyEyeballsConfig",
+    prioritizeIpv6: false,
+    interleave: 0,
+    tryDelayMs: 0,
+    maxConcurrentTry: 0,
+  };
+}
+
+export const HappyEyeballsConfig: MessageFns<HappyEyeballsConfig, "xray.transport.internet.HappyEyeballsConfig"> = {
+  $type: "xray.transport.internet.HappyEyeballsConfig" as const,
+
+  encode(message: HappyEyeballsConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.prioritizeIpv6 !== false) {
+      writer.uint32(8).bool(message.prioritizeIpv6);
+    }
+    if (message.interleave !== 0) {
+      writer.uint32(16).uint32(message.interleave);
+    }
+    if (message.tryDelayMs !== 0) {
+      writer.uint32(24).uint64(message.tryDelayMs);
+    }
+    if (message.maxConcurrentTry !== 0) {
+      writer.uint32(32).uint32(message.maxConcurrentTry);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): HappyEyeballsConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseHappyEyeballsConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.prioritizeIpv6 = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.interleave = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.tryDelayMs = longToNumber(reader.uint64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.maxConcurrentTry = reader.uint32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): HappyEyeballsConfig {
+    return {
+      $type: HappyEyeballsConfig.$type,
+      prioritizeIpv6: isSet(object.prioritizeIpv6) ? globalThis.Boolean(object.prioritizeIpv6) : false,
+      interleave: isSet(object.interleave) ? globalThis.Number(object.interleave) : 0,
+      tryDelayMs: isSet(object.tryDelayMs) ? globalThis.Number(object.tryDelayMs) : 0,
+      maxConcurrentTry: isSet(object.maxConcurrentTry) ? globalThis.Number(object.maxConcurrentTry) : 0,
+    };
+  },
+
+  toJSON(message: HappyEyeballsConfig): unknown {
+    const obj: any = {};
+    if (message.prioritizeIpv6 !== false) {
+      obj.prioritizeIpv6 = message.prioritizeIpv6;
+    }
+    if (message.interleave !== 0) {
+      obj.interleave = Math.round(message.interleave);
+    }
+    if (message.tryDelayMs !== 0) {
+      obj.tryDelayMs = Math.round(message.tryDelayMs);
+    }
+    if (message.maxConcurrentTry !== 0) {
+      obj.maxConcurrentTry = Math.round(message.maxConcurrentTry);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<HappyEyeballsConfig>): HappyEyeballsConfig {
+    return HappyEyeballsConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<HappyEyeballsConfig>): HappyEyeballsConfig {
+    const message = createBaseHappyEyeballsConfig();
+    message.prioritizeIpv6 = object.prioritizeIpv6 ?? false;
+    message.interleave = object.interleave ?? 0;
+    message.tryDelayMs = object.tryDelayMs ?? 0;
+    message.maxConcurrentTry = object.maxConcurrentTry ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(HappyEyeballsConfig.$type, HappyEyeballsConfig);
 
 function bytesFromBase64(b64: string): Uint8Array {
   if ((globalThis as any).Buffer) {
@@ -1174,6 +1363,17 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

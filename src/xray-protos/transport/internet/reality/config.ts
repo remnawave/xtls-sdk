@@ -29,6 +29,15 @@ export interface Config {
   spiderX: string;
   spiderY: number[];
   masterKeyLog: string;
+  limitFallbackUpload: LimitFallback | undefined;
+  limitFallbackDownload: LimitFallback | undefined;
+}
+
+export interface LimitFallback {
+  $type: "xray.transport.internet.reality.LimitFallback";
+  afterBytes: number;
+  bytesPerSec: number;
+  burstBytesPerSec: number;
 }
 
 function createBaseConfig(): Config {
@@ -51,6 +60,8 @@ function createBaseConfig(): Config {
     spiderX: "",
     spiderY: [],
     masterKeyLog: "",
+    limitFallbackUpload: undefined,
+    limitFallbackDownload: undefined,
   };
 }
 
@@ -110,6 +121,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
     writer.join();
     if (message.masterKeyLog !== "") {
       writer.uint32(218).string(message.masterKeyLog);
+    }
+    if (message.limitFallbackUpload !== undefined) {
+      LimitFallback.encode(message.limitFallbackUpload, writer.uint32(226).fork()).join();
+    }
+    if (message.limitFallbackDownload !== undefined) {
+      LimitFallback.encode(message.limitFallbackDownload, writer.uint32(234).fork()).join();
     }
     return writer;
   },
@@ -267,6 +284,22 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
           message.masterKeyLog = reader.string();
           continue;
         }
+        case 28: {
+          if (tag !== 226) {
+            break;
+          }
+
+          message.limitFallbackUpload = LimitFallback.decode(reader, reader.uint32());
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.limitFallbackDownload = LimitFallback.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -298,6 +331,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
       spiderX: isSet(object.spiderX) ? globalThis.String(object.spiderX) : "",
       spiderY: globalThis.Array.isArray(object?.spiderY) ? object.spiderY.map((e: any) => globalThis.Number(e)) : [],
       masterKeyLog: isSet(object.masterKeyLog) ? globalThis.String(object.masterKeyLog) : "",
+      limitFallbackUpload: isSet(object.limitFallbackUpload)
+        ? LimitFallback.fromJSON(object.limitFallbackUpload)
+        : undefined,
+      limitFallbackDownload: isSet(object.limitFallbackDownload)
+        ? LimitFallback.fromJSON(object.limitFallbackDownload)
+        : undefined,
     };
   },
 
@@ -354,6 +393,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
     if (message.masterKeyLog !== "") {
       obj.masterKeyLog = message.masterKeyLog;
     }
+    if (message.limitFallbackUpload !== undefined) {
+      obj.limitFallbackUpload = LimitFallback.toJSON(message.limitFallbackUpload);
+    }
+    if (message.limitFallbackDownload !== undefined) {
+      obj.limitFallbackDownload = LimitFallback.toJSON(message.limitFallbackDownload);
+    }
     return obj;
   },
 
@@ -379,11 +424,115 @@ export const Config: MessageFns<Config, "xray.transport.internet.reality.Config"
     message.spiderX = object.spiderX ?? "";
     message.spiderY = object.spiderY?.map((e) => e) || [];
     message.masterKeyLog = object.masterKeyLog ?? "";
+    message.limitFallbackUpload = (object.limitFallbackUpload !== undefined && object.limitFallbackUpload !== null)
+      ? LimitFallback.fromPartial(object.limitFallbackUpload)
+      : undefined;
+    message.limitFallbackDownload =
+      (object.limitFallbackDownload !== undefined && object.limitFallbackDownload !== null)
+        ? LimitFallback.fromPartial(object.limitFallbackDownload)
+        : undefined;
     return message;
   },
 };
 
 messageTypeRegistry.set(Config.$type, Config);
+
+function createBaseLimitFallback(): LimitFallback {
+  return { $type: "xray.transport.internet.reality.LimitFallback", afterBytes: 0, bytesPerSec: 0, burstBytesPerSec: 0 };
+}
+
+export const LimitFallback: MessageFns<LimitFallback, "xray.transport.internet.reality.LimitFallback"> = {
+  $type: "xray.transport.internet.reality.LimitFallback" as const,
+
+  encode(message: LimitFallback, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.afterBytes !== 0) {
+      writer.uint32(8).uint64(message.afterBytes);
+    }
+    if (message.bytesPerSec !== 0) {
+      writer.uint32(16).uint64(message.bytesPerSec);
+    }
+    if (message.burstBytesPerSec !== 0) {
+      writer.uint32(24).uint64(message.burstBytesPerSec);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LimitFallback {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLimitFallback();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.afterBytes = longToNumber(reader.uint64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.bytesPerSec = longToNumber(reader.uint64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.burstBytesPerSec = longToNumber(reader.uint64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LimitFallback {
+    return {
+      $type: LimitFallback.$type,
+      afterBytes: isSet(object.afterBytes) ? globalThis.Number(object.afterBytes) : 0,
+      bytesPerSec: isSet(object.bytesPerSec) ? globalThis.Number(object.bytesPerSec) : 0,
+      burstBytesPerSec: isSet(object.burstBytesPerSec) ? globalThis.Number(object.burstBytesPerSec) : 0,
+    };
+  },
+
+  toJSON(message: LimitFallback): unknown {
+    const obj: any = {};
+    if (message.afterBytes !== 0) {
+      obj.afterBytes = Math.round(message.afterBytes);
+    }
+    if (message.bytesPerSec !== 0) {
+      obj.bytesPerSec = Math.round(message.bytesPerSec);
+    }
+    if (message.burstBytesPerSec !== 0) {
+      obj.burstBytesPerSec = Math.round(message.burstBytesPerSec);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<LimitFallback>): LimitFallback {
+    return LimitFallback.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<LimitFallback>): LimitFallback {
+    const message = createBaseLimitFallback();
+    message.afterBytes = object.afterBytes ?? 0;
+    message.bytesPerSec = object.bytesPerSec ?? 0;
+    message.burstBytesPerSec = object.burstBytesPerSec ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(LimitFallback.$type, LimitFallback);
 
 function bytesFromBase64(b64: string): Uint8Array {
   if ((globalThis as any).Buffer) {

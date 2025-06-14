@@ -52,6 +52,15 @@ export interface AlterInboundResponse {
   $type: "xray.app.proxyman.command.AlterInboundResponse";
 }
 
+export interface ListInboundsRequest {
+  $type: "xray.app.proxyman.command.ListInboundsRequest";
+}
+
+export interface ListInboundsResponse {
+  $type: "xray.app.proxyman.command.ListInboundsResponse";
+  inbounds: InboundHandlerConfig[];
+}
+
 export interface GetInboundUserRequest {
   $type: "xray.app.proxyman.command.GetInboundUserRequest";
   tag: string;
@@ -94,6 +103,15 @@ export interface AlterOutboundRequest {
 
 export interface AlterOutboundResponse {
   $type: "xray.app.proxyman.command.AlterOutboundResponse";
+}
+
+export interface ListOutboundsRequest {
+  $type: "xray.app.proxyman.command.ListOutboundsRequest";
+}
+
+export interface ListOutboundsResponse {
+  $type: "xray.app.proxyman.command.ListOutboundsResponse";
+  outbounds: OutboundHandlerConfig[];
 }
 
 export interface Config {
@@ -581,6 +599,121 @@ export const AlterInboundResponse: MessageFns<AlterInboundResponse, "xray.app.pr
   };
 
 messageTypeRegistry.set(AlterInboundResponse.$type, AlterInboundResponse);
+
+function createBaseListInboundsRequest(): ListInboundsRequest {
+  return { $type: "xray.app.proxyman.command.ListInboundsRequest" };
+}
+
+export const ListInboundsRequest: MessageFns<ListInboundsRequest, "xray.app.proxyman.command.ListInboundsRequest"> = {
+  $type: "xray.app.proxyman.command.ListInboundsRequest" as const,
+
+  encode(_: ListInboundsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListInboundsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListInboundsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ListInboundsRequest {
+    return { $type: ListInboundsRequest.$type };
+  },
+
+  toJSON(_: ListInboundsRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListInboundsRequest>): ListInboundsRequest {
+    return ListInboundsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ListInboundsRequest>): ListInboundsRequest {
+    const message = createBaseListInboundsRequest();
+    return message;
+  },
+};
+
+messageTypeRegistry.set(ListInboundsRequest.$type, ListInboundsRequest);
+
+function createBaseListInboundsResponse(): ListInboundsResponse {
+  return { $type: "xray.app.proxyman.command.ListInboundsResponse", inbounds: [] };
+}
+
+export const ListInboundsResponse: MessageFns<ListInboundsResponse, "xray.app.proxyman.command.ListInboundsResponse"> =
+  {
+    $type: "xray.app.proxyman.command.ListInboundsResponse" as const,
+
+    encode(message: ListInboundsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+      for (const v of message.inbounds) {
+        InboundHandlerConfig.encode(v!, writer.uint32(10).fork()).join();
+      }
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): ListInboundsResponse {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseListInboundsResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.inbounds.push(InboundHandlerConfig.decode(reader, reader.uint32()));
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): ListInboundsResponse {
+      return {
+        $type: ListInboundsResponse.$type,
+        inbounds: globalThis.Array.isArray(object?.inbounds)
+          ? object.inbounds.map((e: any) => InboundHandlerConfig.fromJSON(e))
+          : [],
+      };
+    },
+
+    toJSON(message: ListInboundsResponse): unknown {
+      const obj: any = {};
+      if (message.inbounds?.length) {
+        obj.inbounds = message.inbounds.map((e) => InboundHandlerConfig.toJSON(e));
+      }
+      return obj;
+    },
+
+    create(base?: DeepPartial<ListInboundsResponse>): ListInboundsResponse {
+      return ListInboundsResponse.fromPartial(base ?? {});
+    },
+    fromPartial(object: DeepPartial<ListInboundsResponse>): ListInboundsResponse {
+      const message = createBaseListInboundsResponse();
+      message.inbounds = object.inbounds?.map((e) => InboundHandlerConfig.fromPartial(e)) || [];
+      return message;
+    },
+  };
+
+messageTypeRegistry.set(ListInboundsResponse.$type, ListInboundsResponse);
 
 function createBaseGetInboundUserRequest(): GetInboundUserRequest {
   return { $type: "xray.app.proxyman.command.GetInboundUserRequest", tag: "", email: "" };
@@ -1165,6 +1298,124 @@ export const AlterOutboundResponse: MessageFns<
 
 messageTypeRegistry.set(AlterOutboundResponse.$type, AlterOutboundResponse);
 
+function createBaseListOutboundsRequest(): ListOutboundsRequest {
+  return { $type: "xray.app.proxyman.command.ListOutboundsRequest" };
+}
+
+export const ListOutboundsRequest: MessageFns<ListOutboundsRequest, "xray.app.proxyman.command.ListOutboundsRequest"> =
+  {
+    $type: "xray.app.proxyman.command.ListOutboundsRequest" as const,
+
+    encode(_: ListOutboundsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): ListOutboundsRequest {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseListOutboundsRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(_: any): ListOutboundsRequest {
+      return { $type: ListOutboundsRequest.$type };
+    },
+
+    toJSON(_: ListOutboundsRequest): unknown {
+      const obj: any = {};
+      return obj;
+    },
+
+    create(base?: DeepPartial<ListOutboundsRequest>): ListOutboundsRequest {
+      return ListOutboundsRequest.fromPartial(base ?? {});
+    },
+    fromPartial(_: DeepPartial<ListOutboundsRequest>): ListOutboundsRequest {
+      const message = createBaseListOutboundsRequest();
+      return message;
+    },
+  };
+
+messageTypeRegistry.set(ListOutboundsRequest.$type, ListOutboundsRequest);
+
+function createBaseListOutboundsResponse(): ListOutboundsResponse {
+  return { $type: "xray.app.proxyman.command.ListOutboundsResponse", outbounds: [] };
+}
+
+export const ListOutboundsResponse: MessageFns<
+  ListOutboundsResponse,
+  "xray.app.proxyman.command.ListOutboundsResponse"
+> = {
+  $type: "xray.app.proxyman.command.ListOutboundsResponse" as const,
+
+  encode(message: ListOutboundsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.outbounds) {
+      OutboundHandlerConfig.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListOutboundsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListOutboundsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.outbounds.push(OutboundHandlerConfig.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListOutboundsResponse {
+    return {
+      $type: ListOutboundsResponse.$type,
+      outbounds: globalThis.Array.isArray(object?.outbounds)
+        ? object.outbounds.map((e: any) => OutboundHandlerConfig.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ListOutboundsResponse): unknown {
+    const obj: any = {};
+    if (message.outbounds?.length) {
+      obj.outbounds = message.outbounds.map((e) => OutboundHandlerConfig.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListOutboundsResponse>): ListOutboundsResponse {
+    return ListOutboundsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListOutboundsResponse>): ListOutboundsResponse {
+    const message = createBaseListOutboundsResponse();
+    message.outbounds = object.outbounds?.map((e) => OutboundHandlerConfig.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+messageTypeRegistry.set(ListOutboundsResponse.$type, ListOutboundsResponse);
+
 function createBaseConfig(): Config {
   return { $type: "xray.app.proxyman.command.Config" };
 }
@@ -1241,6 +1492,14 @@ export const HandlerServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    listInbounds: {
+      name: "ListInbounds",
+      requestType: ListInboundsRequest,
+      requestStream: false,
+      responseType: ListInboundsResponse,
+      responseStream: false,
+      options: {},
+    },
     getInboundUsers: {
       name: "GetInboundUsers",
       requestType: GetInboundUserRequest,
@@ -1281,6 +1540,14 @@ export const HandlerServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    listOutbounds: {
+      name: "ListOutbounds",
+      requestType: ListOutboundsRequest,
+      requestStream: false,
+      responseType: ListOutboundsResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1297,6 +1564,10 @@ export interface HandlerServiceImplementation<CallContextExt = {}> {
     request: AlterInboundRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<AlterInboundResponse>>;
+  listInbounds(
+    request: ListInboundsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListInboundsResponse>>;
   getInboundUsers(
     request: GetInboundUserRequest,
     context: CallContext & CallContextExt,
@@ -1317,6 +1588,10 @@ export interface HandlerServiceImplementation<CallContextExt = {}> {
     request: AlterOutboundRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<AlterOutboundResponse>>;
+  listOutbounds(
+    request: ListOutboundsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ListOutboundsResponse>>;
 }
 
 export interface HandlerServiceClient<CallOptionsExt = {}> {
@@ -1332,6 +1607,10 @@ export interface HandlerServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<AlterInboundRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<AlterInboundResponse>;
+  listInbounds(
+    request: DeepPartial<ListInboundsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListInboundsResponse>;
   getInboundUsers(
     request: DeepPartial<GetInboundUserRequest>,
     options?: CallOptions & CallOptionsExt,
@@ -1352,6 +1631,10 @@ export interface HandlerServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<AlterOutboundRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<AlterOutboundResponse>;
+  listOutbounds(
+    request: DeepPartial<ListOutboundsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ListOutboundsResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

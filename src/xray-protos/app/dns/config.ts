@@ -61,6 +61,7 @@ export enum QueryStrategy {
   USE_IP = 0,
   USE_IP4 = 1,
   USE_IP6 = 2,
+  USE_SYS = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -75,6 +76,9 @@ export function queryStrategyFromJSON(object: any): QueryStrategy {
     case 2:
     case "USE_IP6":
       return QueryStrategy.USE_IP6;
+    case 3:
+    case "USE_SYS":
+      return QueryStrategy.USE_SYS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -90,6 +94,8 @@ export function queryStrategyToJSON(object: QueryStrategy): string {
       return "USE_IP4";
     case QueryStrategy.USE_IP6:
       return "USE_IP6";
+    case QueryStrategy.USE_SYS:
+      return "USE_SYS";
     case QueryStrategy.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -102,9 +108,16 @@ export interface NameServer {
   clientIp: Uint8Array;
   skipFallback: boolean;
   prioritizedDomain: NameServer_PriorityDomain[];
-  geoip: GeoIP[];
+  expectedGeoip: GeoIP[];
   originalRules: NameServer_OriginalRule[];
   queryStrategy: QueryStrategy;
+  actPrior: boolean;
+  tag: string;
+  timeoutMs: number;
+  disableCache: boolean;
+  finalQuery: boolean;
+  unexpectedGeoip: GeoIP[];
+  actUnprior: boolean;
 }
 
 export interface NameServer_PriorityDomain {
@@ -160,9 +173,16 @@ function createBaseNameServer(): NameServer {
     clientIp: new Uint8Array(0),
     skipFallback: false,
     prioritizedDomain: [],
-    geoip: [],
+    expectedGeoip: [],
     originalRules: [],
     queryStrategy: 0,
+    actPrior: false,
+    tag: "",
+    timeoutMs: 0,
+    disableCache: false,
+    finalQuery: false,
+    unexpectedGeoip: [],
+    actUnprior: false,
   };
 }
 
@@ -182,7 +202,7 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
     for (const v of message.prioritizedDomain) {
       NameServer_PriorityDomain.encode(v!, writer.uint32(18).fork()).join();
     }
-    for (const v of message.geoip) {
+    for (const v of message.expectedGeoip) {
       GeoIP.encode(v!, writer.uint32(26).fork()).join();
     }
     for (const v of message.originalRules) {
@@ -190,6 +210,27 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
     }
     if (message.queryStrategy !== 0) {
       writer.uint32(56).int32(message.queryStrategy);
+    }
+    if (message.actPrior !== false) {
+      writer.uint32(64).bool(message.actPrior);
+    }
+    if (message.tag !== "") {
+      writer.uint32(74).string(message.tag);
+    }
+    if (message.timeoutMs !== 0) {
+      writer.uint32(80).uint64(message.timeoutMs);
+    }
+    if (message.disableCache !== false) {
+      writer.uint32(88).bool(message.disableCache);
+    }
+    if (message.finalQuery !== false) {
+      writer.uint32(96).bool(message.finalQuery);
+    }
+    for (const v of message.unexpectedGeoip) {
+      GeoIP.encode(v!, writer.uint32(106).fork()).join();
+    }
+    if (message.actUnprior !== false) {
+      writer.uint32(112).bool(message.actUnprior);
     }
     return writer;
   },
@@ -238,7 +279,7 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
             break;
           }
 
-          message.geoip.push(GeoIP.decode(reader, reader.uint32()));
+          message.expectedGeoip.push(GeoIP.decode(reader, reader.uint32()));
           continue;
         }
         case 4: {
@@ -255,6 +296,62 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
           }
 
           message.queryStrategy = reader.int32() as any;
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.actPrior = reader.bool();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.tag = reader.string();
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.timeoutMs = longToNumber(reader.uint64());
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.disableCache = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.finalQuery = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.unexpectedGeoip.push(GeoIP.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.actUnprior = reader.bool();
           continue;
         }
       }
@@ -275,11 +372,22 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
       prioritizedDomain: globalThis.Array.isArray(object?.prioritizedDomain)
         ? object.prioritizedDomain.map((e: any) => NameServer_PriorityDomain.fromJSON(e))
         : [],
-      geoip: globalThis.Array.isArray(object?.geoip) ? object.geoip.map((e: any) => GeoIP.fromJSON(e)) : [],
+      expectedGeoip: globalThis.Array.isArray(object?.expectedGeoip)
+        ? object.expectedGeoip.map((e: any) => GeoIP.fromJSON(e))
+        : [],
       originalRules: globalThis.Array.isArray(object?.originalRules)
         ? object.originalRules.map((e: any) => NameServer_OriginalRule.fromJSON(e))
         : [],
       queryStrategy: isSet(object.queryStrategy) ? queryStrategyFromJSON(object.queryStrategy) : 0,
+      actPrior: isSet(object.actPrior) ? globalThis.Boolean(object.actPrior) : false,
+      tag: isSet(object.tag) ? globalThis.String(object.tag) : "",
+      timeoutMs: isSet(object.timeoutMs) ? globalThis.Number(object.timeoutMs) : 0,
+      disableCache: isSet(object.disableCache) ? globalThis.Boolean(object.disableCache) : false,
+      finalQuery: isSet(object.finalQuery) ? globalThis.Boolean(object.finalQuery) : false,
+      unexpectedGeoip: globalThis.Array.isArray(object?.unexpectedGeoip)
+        ? object.unexpectedGeoip.map((e: any) => GeoIP.fromJSON(e))
+        : [],
+      actUnprior: isSet(object.actUnprior) ? globalThis.Boolean(object.actUnprior) : false,
     };
   },
 
@@ -297,14 +405,35 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
     if (message.prioritizedDomain?.length) {
       obj.prioritizedDomain = message.prioritizedDomain.map((e) => NameServer_PriorityDomain.toJSON(e));
     }
-    if (message.geoip?.length) {
-      obj.geoip = message.geoip.map((e) => GeoIP.toJSON(e));
+    if (message.expectedGeoip?.length) {
+      obj.expectedGeoip = message.expectedGeoip.map((e) => GeoIP.toJSON(e));
     }
     if (message.originalRules?.length) {
       obj.originalRules = message.originalRules.map((e) => NameServer_OriginalRule.toJSON(e));
     }
     if (message.queryStrategy !== 0) {
       obj.queryStrategy = queryStrategyToJSON(message.queryStrategy);
+    }
+    if (message.actPrior !== false) {
+      obj.actPrior = message.actPrior;
+    }
+    if (message.tag !== "") {
+      obj.tag = message.tag;
+    }
+    if (message.timeoutMs !== 0) {
+      obj.timeoutMs = Math.round(message.timeoutMs);
+    }
+    if (message.disableCache !== false) {
+      obj.disableCache = message.disableCache;
+    }
+    if (message.finalQuery !== false) {
+      obj.finalQuery = message.finalQuery;
+    }
+    if (message.unexpectedGeoip?.length) {
+      obj.unexpectedGeoip = message.unexpectedGeoip.map((e) => GeoIP.toJSON(e));
+    }
+    if (message.actUnprior !== false) {
+      obj.actUnprior = message.actUnprior;
     }
     return obj;
   },
@@ -320,9 +449,16 @@ export const NameServer: MessageFns<NameServer, "xray.app.dns.NameServer"> = {
     message.clientIp = object.clientIp ?? new Uint8Array(0);
     message.skipFallback = object.skipFallback ?? false;
     message.prioritizedDomain = object.prioritizedDomain?.map((e) => NameServer_PriorityDomain.fromPartial(e)) || [];
-    message.geoip = object.geoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.expectedGeoip = object.expectedGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
     message.originalRules = object.originalRules?.map((e) => NameServer_OriginalRule.fromPartial(e)) || [];
     message.queryStrategy = object.queryStrategy ?? 0;
+    message.actPrior = object.actPrior ?? false;
+    message.tag = object.tag ?? "";
+    message.timeoutMs = object.timeoutMs ?? 0;
+    message.disableCache = object.disableCache ?? false;
+    message.finalQuery = object.finalQuery ?? false;
+    message.unexpectedGeoip = object.unexpectedGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.actUnprior = object.actUnprior ?? false;
     return message;
   },
 };
@@ -832,6 +968,17 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
