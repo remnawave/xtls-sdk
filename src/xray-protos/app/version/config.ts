@@ -2,29 +2,37 @@
 // versions:
 //   protoc-gen-ts_proto  v2.2.7
 //   protoc               v5.29.3
-// source: transport/internet/headers/dns/config.proto
+// source: app/version/config.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { messageTypeRegistry } from "../../../../typeRegistry";
+import { messageTypeRegistry } from "../../typeRegistry";
 
-export const protobufPackage = "xray.transport.internet.headers.dns";
+export const protobufPackage = "xray.app.version";
 
 export interface Config {
-  $type: "xray.transport.internet.headers.dns.Config";
-  domain: string;
+  $type: "xray.app.version.Config";
+  coreVersion: string;
+  minVersion: string;
+  maxVersion: string;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.transport.internet.headers.dns.Config", domain: "" };
+  return { $type: "xray.app.version.Config", coreVersion: "", minVersion: "", maxVersion: "" };
 }
 
-export const Config: MessageFns<Config, "xray.transport.internet.headers.dns.Config"> = {
-  $type: "xray.transport.internet.headers.dns.Config" as const,
+export const Config: MessageFns<Config, "xray.app.version.Config"> = {
+  $type: "xray.app.version.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.domain !== "") {
-      writer.uint32(10).string(message.domain);
+    if (message.coreVersion !== "") {
+      writer.uint32(10).string(message.coreVersion);
+    }
+    if (message.minVersion !== "") {
+      writer.uint32(18).string(message.minVersion);
+    }
+    if (message.maxVersion !== "") {
+      writer.uint32(26).string(message.maxVersion);
     }
     return writer;
   },
@@ -41,7 +49,23 @@ export const Config: MessageFns<Config, "xray.transport.internet.headers.dns.Con
             break;
           }
 
-          message.domain = reader.string();
+          message.coreVersion = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.minVersion = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.maxVersion = reader.string();
           continue;
         }
       }
@@ -54,13 +78,24 @@ export const Config: MessageFns<Config, "xray.transport.internet.headers.dns.Con
   },
 
   fromJSON(object: any): Config {
-    return { $type: Config.$type, domain: isSet(object.domain) ? globalThis.String(object.domain) : "" };
+    return {
+      $type: Config.$type,
+      coreVersion: isSet(object.coreVersion) ? globalThis.String(object.coreVersion) : "",
+      minVersion: isSet(object.minVersion) ? globalThis.String(object.minVersion) : "",
+      maxVersion: isSet(object.maxVersion) ? globalThis.String(object.maxVersion) : "",
+    };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.domain !== "") {
-      obj.domain = message.domain;
+    if (message.coreVersion !== "") {
+      obj.coreVersion = message.coreVersion;
+    }
+    if (message.minVersion !== "") {
+      obj.minVersion = message.minVersion;
+    }
+    if (message.maxVersion !== "") {
+      obj.maxVersion = message.maxVersion;
     }
     return obj;
   },
@@ -70,7 +105,9 @@ export const Config: MessageFns<Config, "xray.transport.internet.headers.dns.Con
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.domain = object.domain ?? "";
+    message.coreVersion = object.coreVersion ?? "";
+    message.minVersion = object.minVersion ?? "";
+    message.maxVersion = object.maxVersion ?? "";
     return message;
   },
 };

@@ -1,4 +1,4 @@
-import { QueryStatsResponse, Stat } from '../../../xray-protos/app/stats/command/command';
+import { QueryStatsResponse } from '../../../xray-protos/app/stats/command/command';
 import { IInboundStat } from './interfaces';
 
 /**
@@ -29,17 +29,18 @@ export class GetInboundStatsResponseModel {
      * @private
      */
     private parseData(data: QueryStatsResponse): IInboundStat[] {
-        const formattedStats = data.stat.reduce((acc: IInboundStat[], curr: Stat) => {
-            const nameParts = curr.name.split('>>>');
+        const inboundsMap = new Map<string, IInboundStat>();
+
+        for (const stat of data.stat) {
+            const nameParts = stat.name.split('>>>');
             const inboundTag = nameParts[1];
             const type = nameParts[3];
-            const value = curr.value;
+            const value = stat.value;
 
-            let inbound = acc.find((item) => item.inbound === inboundTag);
-
+            let inbound = inboundsMap.get(inboundTag);
             if (!inbound) {
                 inbound = { inbound: inboundTag, uplink: 0, downlink: 0 };
-                acc.push(inbound);
+                inboundsMap.set(inboundTag, inbound);
             }
 
             if (type === 'uplink') {
@@ -47,10 +48,8 @@ export class GetInboundStatsResponseModel {
             } else if (type === 'downlink') {
                 inbound.downlink += value;
             }
+        }
 
-            return acc;
-        }, []);
-
-        return formattedStats;
+        return Array.from(inboundsMap.values());
     }
 }

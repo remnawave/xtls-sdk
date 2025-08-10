@@ -1,4 +1,4 @@
-import { QueryStatsResponse, Stat } from '../../../xray-protos/app/stats/command/command';
+import { QueryStatsResponse } from '../../../xray-protos/app/stats/command/command';
 import { IUserStat } from './interfaces';
 
 /**
@@ -28,17 +28,18 @@ export class GetUserStatsResponseModel {
      * @private
      */
     private parseData(data: QueryStatsResponse): IUserStat[] {
-        const formattedStats = data.stat.reduce((acc: IUserStat[], curr: Stat) => {
-            const nameParts = curr.name.split('>>>');
+        const usersMap = new Map<string, IUserStat>();
+
+        for (const stat of data.stat) {
+            const nameParts = stat.name.split('>>>');
             const username = nameParts[1];
             const type = nameParts[3];
-            const value = curr.value;
+            const value = stat.value;
 
-            let user = acc.find((item) => item.username === username);
-
+            let user = usersMap.get(username);
             if (!user) {
                 user = { username, uplink: 0, downlink: 0 };
-                acc.push(user);
+                usersMap.set(username, user);
             }
 
             if (type === 'uplink') {
@@ -46,10 +47,8 @@ export class GetUserStatsResponseModel {
             } else if (type === 'downlink') {
                 user.downlink += value;
             }
+        }
 
-            return acc;
-        }, []);
-
-        return formattedStats;
+        return Array.from(usersMap.values());
     }
 }
