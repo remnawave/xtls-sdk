@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { ServerEndpoint } from "../../common/protocol/server_spec";
+import { DomainStrategy, domainStrategyFromJSON, domainStrategyToJSON } from "../../transport/internet/config";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.freedom";
@@ -24,6 +25,8 @@ export interface Fragment {
   lengthMax: number;
   intervalMin: number;
   intervalMax: number;
+  maxSplitMin: number;
+  maxSplitMax: number;
 }
 
 export interface Noise {
@@ -33,103 +36,17 @@ export interface Noise {
   delayMin: number;
   delayMax: number;
   packet: Uint8Array;
+  applyTo: string;
 }
 
 export interface Config {
   $type: "xray.proxy.freedom.Config";
-  domainStrategy: Config_DomainStrategy;
+  domainStrategy: DomainStrategy;
   destinationOverride: DestinationOverride | undefined;
   userLevel: number;
   fragment: Fragment | undefined;
   proxyProtocol: number;
   noises: Noise[];
-}
-
-export enum Config_DomainStrategy {
-  AS_IS = 0,
-  USE_IP = 1,
-  USE_IP4 = 2,
-  USE_IP6 = 3,
-  USE_IP46 = 4,
-  USE_IP64 = 5,
-  FORCE_IP = 6,
-  FORCE_IP4 = 7,
-  FORCE_IP6 = 8,
-  FORCE_IP46 = 9,
-  FORCE_IP64 = 10,
-  UNRECOGNIZED = -1,
-}
-
-export function config_DomainStrategyFromJSON(object: any): Config_DomainStrategy {
-  switch (object) {
-    case 0:
-    case "AS_IS":
-      return Config_DomainStrategy.AS_IS;
-    case 1:
-    case "USE_IP":
-      return Config_DomainStrategy.USE_IP;
-    case 2:
-    case "USE_IP4":
-      return Config_DomainStrategy.USE_IP4;
-    case 3:
-    case "USE_IP6":
-      return Config_DomainStrategy.USE_IP6;
-    case 4:
-    case "USE_IP46":
-      return Config_DomainStrategy.USE_IP46;
-    case 5:
-    case "USE_IP64":
-      return Config_DomainStrategy.USE_IP64;
-    case 6:
-    case "FORCE_IP":
-      return Config_DomainStrategy.FORCE_IP;
-    case 7:
-    case "FORCE_IP4":
-      return Config_DomainStrategy.FORCE_IP4;
-    case 8:
-    case "FORCE_IP6":
-      return Config_DomainStrategy.FORCE_IP6;
-    case 9:
-    case "FORCE_IP46":
-      return Config_DomainStrategy.FORCE_IP46;
-    case 10:
-    case "FORCE_IP64":
-      return Config_DomainStrategy.FORCE_IP64;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Config_DomainStrategy.UNRECOGNIZED;
-  }
-}
-
-export function config_DomainStrategyToJSON(object: Config_DomainStrategy): string {
-  switch (object) {
-    case Config_DomainStrategy.AS_IS:
-      return "AS_IS";
-    case Config_DomainStrategy.USE_IP:
-      return "USE_IP";
-    case Config_DomainStrategy.USE_IP4:
-      return "USE_IP4";
-    case Config_DomainStrategy.USE_IP6:
-      return "USE_IP6";
-    case Config_DomainStrategy.USE_IP46:
-      return "USE_IP46";
-    case Config_DomainStrategy.USE_IP64:
-      return "USE_IP64";
-    case Config_DomainStrategy.FORCE_IP:
-      return "FORCE_IP";
-    case Config_DomainStrategy.FORCE_IP4:
-      return "FORCE_IP4";
-    case Config_DomainStrategy.FORCE_IP6:
-      return "FORCE_IP6";
-    case Config_DomainStrategy.FORCE_IP46:
-      return "FORCE_IP46";
-    case Config_DomainStrategy.FORCE_IP64:
-      return "FORCE_IP64";
-    case Config_DomainStrategy.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 function createBaseDestinationOverride(): DestinationOverride {
@@ -208,6 +125,8 @@ function createBaseFragment(): Fragment {
     lengthMax: 0,
     intervalMin: 0,
     intervalMax: 0,
+    maxSplitMin: 0,
+    maxSplitMax: 0,
   };
 }
 
@@ -232,6 +151,12 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
     }
     if (message.intervalMax !== 0) {
       writer.uint32(48).uint64(message.intervalMax);
+    }
+    if (message.maxSplitMin !== 0) {
+      writer.uint32(56).uint64(message.maxSplitMin);
+    }
+    if (message.maxSplitMax !== 0) {
+      writer.uint32(64).uint64(message.maxSplitMax);
     }
     return writer;
   },
@@ -291,6 +216,22 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
           message.intervalMax = longToNumber(reader.uint64());
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.maxSplitMin = longToNumber(reader.uint64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.maxSplitMax = longToNumber(reader.uint64());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -309,6 +250,8 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
       lengthMax: isSet(object.lengthMax) ? globalThis.Number(object.lengthMax) : 0,
       intervalMin: isSet(object.intervalMin) ? globalThis.Number(object.intervalMin) : 0,
       intervalMax: isSet(object.intervalMax) ? globalThis.Number(object.intervalMax) : 0,
+      maxSplitMin: isSet(object.maxSplitMin) ? globalThis.Number(object.maxSplitMin) : 0,
+      maxSplitMax: isSet(object.maxSplitMax) ? globalThis.Number(object.maxSplitMax) : 0,
     };
   },
 
@@ -332,6 +275,12 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
     if (message.intervalMax !== 0) {
       obj.intervalMax = Math.round(message.intervalMax);
     }
+    if (message.maxSplitMin !== 0) {
+      obj.maxSplitMin = Math.round(message.maxSplitMin);
+    }
+    if (message.maxSplitMax !== 0) {
+      obj.maxSplitMax = Math.round(message.maxSplitMax);
+    }
     return obj;
   },
 
@@ -346,6 +295,8 @@ export const Fragment: MessageFns<Fragment, "xray.proxy.freedom.Fragment"> = {
     message.lengthMax = object.lengthMax ?? 0;
     message.intervalMin = object.intervalMin ?? 0;
     message.intervalMax = object.intervalMax ?? 0;
+    message.maxSplitMin = object.maxSplitMin ?? 0;
+    message.maxSplitMax = object.maxSplitMax ?? 0;
     return message;
   },
 };
@@ -360,6 +311,7 @@ function createBaseNoise(): Noise {
     delayMin: 0,
     delayMax: 0,
     packet: new Uint8Array(0),
+    applyTo: "",
   };
 }
 
@@ -381,6 +333,9 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     }
     if (message.packet.length !== 0) {
       writer.uint32(42).bytes(message.packet);
+    }
+    if (message.applyTo !== "") {
+      writer.uint32(50).string(message.applyTo);
     }
     return writer;
   },
@@ -432,6 +387,14 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
           message.packet = reader.bytes();
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.applyTo = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -449,6 +412,7 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
       delayMin: isSet(object.delayMin) ? globalThis.Number(object.delayMin) : 0,
       delayMax: isSet(object.delayMax) ? globalThis.Number(object.delayMax) : 0,
       packet: isSet(object.packet) ? bytesFromBase64(object.packet) : new Uint8Array(0),
+      applyTo: isSet(object.applyTo) ? globalThis.String(object.applyTo) : "",
     };
   },
 
@@ -469,6 +433,9 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     if (message.packet.length !== 0) {
       obj.packet = base64FromBytes(message.packet);
     }
+    if (message.applyTo !== "") {
+      obj.applyTo = message.applyTo;
+    }
     return obj;
   },
 
@@ -482,6 +449,7 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
     message.delayMin = object.delayMin ?? 0;
     message.delayMax = object.delayMax ?? 0;
     message.packet = object.packet ?? new Uint8Array(0);
+    message.applyTo = object.applyTo ?? "";
     return message;
   },
 };
@@ -592,7 +560,7 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      domainStrategy: isSet(object.domainStrategy) ? config_DomainStrategyFromJSON(object.domainStrategy) : 0,
+      domainStrategy: isSet(object.domainStrategy) ? domainStrategyFromJSON(object.domainStrategy) : 0,
       destinationOverride: isSet(object.destinationOverride)
         ? DestinationOverride.fromJSON(object.destinationOverride)
         : undefined,
@@ -606,7 +574,7 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
   toJSON(message: Config): unknown {
     const obj: any = {};
     if (message.domainStrategy !== 0) {
-      obj.domainStrategy = config_DomainStrategyToJSON(message.domainStrategy);
+      obj.domainStrategy = domainStrategyToJSON(message.domainStrategy);
     }
     if (message.destinationOverride !== undefined) {
       obj.destinationOverride = DestinationOverride.toJSON(message.destinationOverride);

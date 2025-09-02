@@ -24,12 +24,11 @@ export interface Fallback {
 export interface Config {
   $type: "xray.proxy.vless.inbound.Config";
   clients: User[];
-  /**
-   * Decryption settings. Only applies to server side, and only accepts "none"
-   * for now.
-   */
-  decryption: string;
   fallbacks: Fallback[];
+  decryption: string;
+  xorMode: number;
+  seconds: number;
+  padding: string;
 }
 
 function createBaseFallback(): Fallback {
@@ -178,7 +177,15 @@ export const Fallback: MessageFns<Fallback, "xray.proxy.vless.inbound.Fallback">
 messageTypeRegistry.set(Fallback.$type, Fallback);
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.vless.inbound.Config", clients: [], decryption: "", fallbacks: [] };
+  return {
+    $type: "xray.proxy.vless.inbound.Config",
+    clients: [],
+    fallbacks: [],
+    decryption: "",
+    xorMode: 0,
+    seconds: 0,
+    padding: "",
+  };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
@@ -188,11 +195,20 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     for (const v of message.clients) {
       User.encode(v!, writer.uint32(10).fork()).join();
     }
-    if (message.decryption !== "") {
-      writer.uint32(18).string(message.decryption);
-    }
     for (const v of message.fallbacks) {
-      Fallback.encode(v!, writer.uint32(26).fork()).join();
+      Fallback.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.decryption !== "") {
+      writer.uint32(26).string(message.decryption);
+    }
+    if (message.xorMode !== 0) {
+      writer.uint32(32).uint32(message.xorMode);
+    }
+    if (message.seconds !== 0) {
+      writer.uint32(40).uint32(message.seconds);
+    }
+    if (message.padding !== "") {
+      writer.uint32(50).string(message.padding);
     }
     return writer;
   },
@@ -217,7 +233,7 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
             break;
           }
 
-          message.decryption = reader.string();
+          message.fallbacks.push(Fallback.decode(reader, reader.uint32()));
           continue;
         }
         case 3: {
@@ -225,7 +241,31 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
             break;
           }
 
-          message.fallbacks.push(Fallback.decode(reader, reader.uint32()));
+          message.decryption = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.xorMode = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.seconds = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.padding = reader.string();
           continue;
         }
       }
@@ -241,10 +281,13 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     return {
       $type: Config.$type,
       clients: globalThis.Array.isArray(object?.clients) ? object.clients.map((e: any) => User.fromJSON(e)) : [],
-      decryption: isSet(object.decryption) ? globalThis.String(object.decryption) : "",
       fallbacks: globalThis.Array.isArray(object?.fallbacks)
         ? object.fallbacks.map((e: any) => Fallback.fromJSON(e))
         : [],
+      decryption: isSet(object.decryption) ? globalThis.String(object.decryption) : "",
+      xorMode: isSet(object.xorMode) ? globalThis.Number(object.xorMode) : 0,
+      seconds: isSet(object.seconds) ? globalThis.Number(object.seconds) : 0,
+      padding: isSet(object.padding) ? globalThis.String(object.padding) : "",
     };
   },
 
@@ -253,11 +296,20 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     if (message.clients?.length) {
       obj.clients = message.clients.map((e) => User.toJSON(e));
     }
+    if (message.fallbacks?.length) {
+      obj.fallbacks = message.fallbacks.map((e) => Fallback.toJSON(e));
+    }
     if (message.decryption !== "") {
       obj.decryption = message.decryption;
     }
-    if (message.fallbacks?.length) {
-      obj.fallbacks = message.fallbacks.map((e) => Fallback.toJSON(e));
+    if (message.xorMode !== 0) {
+      obj.xorMode = Math.round(message.xorMode);
+    }
+    if (message.seconds !== 0) {
+      obj.seconds = Math.round(message.seconds);
+    }
+    if (message.padding !== "") {
+      obj.padding = message.padding;
     }
     return obj;
   },
@@ -268,8 +320,11 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
     message.clients = object.clients?.map((e) => User.fromPartial(e)) || [];
-    message.decryption = object.decryption ?? "";
     message.fallbacks = object.fallbacks?.map((e) => Fallback.fromPartial(e)) || [];
+    message.decryption = object.decryption ?? "";
+    message.xorMode = object.xorMode ?? 0;
+    message.seconds = object.seconds ?? 0;
+    message.padding = object.padding ?? "";
     return message;
   },
 };

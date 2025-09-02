@@ -148,7 +148,9 @@ export interface RoutingRule {
   inboundTag: string[];
   protocol: string[];
   attributes: { [key: string]: string };
-  domainMatcher: string;
+  localGeoip: GeoIP[];
+  localPortList: PortList | undefined;
+  vlessRouteList: PortList | undefined;
 }
 
 export interface RoutingRule_AttributesEntry {
@@ -844,7 +846,9 @@ function createBaseRoutingRule(): RoutingRule {
     inboundTag: [],
     protocol: [],
     attributes: {},
-    domainMatcher: "",
+    localGeoip: [],
+    localPortList: undefined,
+    vlessRouteList: undefined,
   };
 }
 
@@ -859,7 +863,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       writer.uint32(98).string(message.balancingTag);
     }
     if (message.ruleTag !== "") {
-      writer.uint32(146).string(message.ruleTag);
+      writer.uint32(154).string(message.ruleTag);
     }
     for (const v of message.domain) {
       Domain.encode(v!, writer.uint32(18).fork()).join();
@@ -897,8 +901,14 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         value,
       }, writer.uint32(122).fork()).join();
     });
-    if (message.domainMatcher !== "") {
-      writer.uint32(138).string(message.domainMatcher);
+    for (const v of message.localGeoip) {
+      GeoIP.encode(v!, writer.uint32(138).fork()).join();
+    }
+    if (message.localPortList !== undefined) {
+      PortList.encode(message.localPortList, writer.uint32(146).fork()).join();
+    }
+    if (message.vlessRouteList !== undefined) {
+      PortList.encode(message.vlessRouteList, writer.uint32(162).fork()).join();
     }
     return writer;
   },
@@ -926,8 +936,8 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           message.balancingTag = reader.string();
           continue;
         }
-        case 18: {
-          if (tag !== 146) {
+        case 19: {
+          if (tag !== 154) {
             break;
           }
 
@@ -1032,7 +1042,23 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
             break;
           }
 
-          message.domainMatcher = reader.string();
+          message.localGeoip.push(GeoIP.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 18: {
+          if (tag !== 146) {
+            break;
+          }
+
+          message.localPortList = PortList.decode(reader, reader.uint32());
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
+            break;
+          }
+
+          message.vlessRouteList = PortList.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1071,7 +1097,11 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           return acc;
         }, {})
         : {},
-      domainMatcher: isSet(object.domainMatcher) ? globalThis.String(object.domainMatcher) : "",
+      localGeoip: globalThis.Array.isArray(object?.localGeoip)
+        ? object.localGeoip.map((e: any) => GeoIP.fromJSON(e))
+        : [],
+      localPortList: isSet(object.localPortList) ? PortList.fromJSON(object.localPortList) : undefined,
+      vlessRouteList: isSet(object.vlessRouteList) ? PortList.fromJSON(object.vlessRouteList) : undefined,
     };
   },
 
@@ -1122,8 +1152,14 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         });
       }
     }
-    if (message.domainMatcher !== "") {
-      obj.domainMatcher = message.domainMatcher;
+    if (message.localGeoip?.length) {
+      obj.localGeoip = message.localGeoip.map((e) => GeoIP.toJSON(e));
+    }
+    if (message.localPortList !== undefined) {
+      obj.localPortList = PortList.toJSON(message.localPortList);
+    }
+    if (message.vlessRouteList !== undefined) {
+      obj.vlessRouteList = PortList.toJSON(message.vlessRouteList);
     }
     return obj;
   },
@@ -1158,7 +1194,13 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       },
       {},
     );
-    message.domainMatcher = object.domainMatcher ?? "";
+    message.localGeoip = object.localGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.localPortList = (object.localPortList !== undefined && object.localPortList !== null)
+      ? PortList.fromPartial(object.localPortList)
+      : undefined;
+    message.vlessRouteList = (object.vlessRouteList !== undefined && object.vlessRouteList !== null)
+      ? PortList.fromPartial(object.vlessRouteList)
+      : undefined;
     return message;
   },
 };

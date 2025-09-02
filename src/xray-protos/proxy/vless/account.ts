@@ -16,12 +16,14 @@ export interface Account {
   id: string;
   /** Flow settings. May be "xtls-rprx-vision". */
   flow: string;
-  /** Encryption settings. Only applies to client side, and only accepts "none" for now. */
   encryption: string;
+  xorMode: number;
+  seconds: number;
+  padding: string;
 }
 
 function createBaseAccount(): Account {
-  return { $type: "xray.proxy.vless.Account", id: "", flow: "", encryption: "" };
+  return { $type: "xray.proxy.vless.Account", id: "", flow: "", encryption: "", xorMode: 0, seconds: 0, padding: "" };
 }
 
 export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
@@ -36,6 +38,15 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     }
     if (message.encryption !== "") {
       writer.uint32(26).string(message.encryption);
+    }
+    if (message.xorMode !== 0) {
+      writer.uint32(32).uint32(message.xorMode);
+    }
+    if (message.seconds !== 0) {
+      writer.uint32(40).uint32(message.seconds);
+    }
+    if (message.padding !== "") {
+      writer.uint32(50).string(message.padding);
     }
     return writer;
   },
@@ -71,6 +82,30 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
           message.encryption = reader.string();
           continue;
         }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.xorMode = reader.uint32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.seconds = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.padding = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -86,6 +121,9 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       flow: isSet(object.flow) ? globalThis.String(object.flow) : "",
       encryption: isSet(object.encryption) ? globalThis.String(object.encryption) : "",
+      xorMode: isSet(object.xorMode) ? globalThis.Number(object.xorMode) : 0,
+      seconds: isSet(object.seconds) ? globalThis.Number(object.seconds) : 0,
+      padding: isSet(object.padding) ? globalThis.String(object.padding) : "",
     };
   },
 
@@ -100,6 +138,15 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     if (message.encryption !== "") {
       obj.encryption = message.encryption;
     }
+    if (message.xorMode !== 0) {
+      obj.xorMode = Math.round(message.xorMode);
+    }
+    if (message.seconds !== 0) {
+      obj.seconds = Math.round(message.seconds);
+    }
+    if (message.padding !== "") {
+      obj.padding = message.padding;
+    }
     return obj;
   },
 
@@ -111,6 +158,9 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     message.id = object.id ?? "";
     message.flow = object.flow ?? "";
     message.encryption = object.encryption ?? "";
+    message.xorMode = object.xorMode ?? 0;
+    message.seconds = object.seconds ?? 0;
+    message.padding = object.padding ?? "";
     return message;
   },
 };

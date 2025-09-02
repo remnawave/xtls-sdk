@@ -32,6 +32,9 @@ export interface RoutingContext {
   Attributes: { [key: string]: string };
   OutboundGroupTags: string[];
   OutboundTag: string;
+  LocalIPs: Uint8Array[];
+  LocalPort: number;
+  VlessRoute: number;
 }
 
 export interface RoutingContext_AttributesEntry {
@@ -154,6 +157,9 @@ function createBaseRoutingContext(): RoutingContext {
     Attributes: {},
     OutboundGroupTags: [],
     OutboundTag: "",
+    LocalIPs: [],
+    LocalPort: 0,
+    VlessRoute: 0,
   };
 }
 
@@ -200,6 +206,15 @@ export const RoutingContext: MessageFns<RoutingContext, "xray.app.router.command
     }
     if (message.OutboundTag !== "") {
       writer.uint32(98).string(message.OutboundTag);
+    }
+    for (const v of message.LocalIPs) {
+      writer.uint32(106).bytes(v!);
+    }
+    if (message.LocalPort !== 0) {
+      writer.uint32(112).uint32(message.LocalPort);
+    }
+    if (message.VlessRoute !== 0) {
+      writer.uint32(120).uint32(message.VlessRoute);
     }
     return writer;
   },
@@ -310,6 +325,30 @@ export const RoutingContext: MessageFns<RoutingContext, "xray.app.router.command
           message.OutboundTag = reader.string();
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.LocalIPs.push(reader.bytes());
+          continue;
+        }
+        case 14: {
+          if (tag !== 112) {
+            break;
+          }
+
+          message.LocalPort = reader.uint32();
+          continue;
+        }
+        case 15: {
+          if (tag !== 120) {
+            break;
+          }
+
+          message.VlessRoute = reader.uint32();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -345,6 +384,9 @@ export const RoutingContext: MessageFns<RoutingContext, "xray.app.router.command
         ? object.OutboundGroupTags.map((e: any) => globalThis.String(e))
         : [],
       OutboundTag: isSet(object.OutboundTag) ? globalThis.String(object.OutboundTag) : "",
+      LocalIPs: globalThis.Array.isArray(object?.LocalIPs) ? object.LocalIPs.map((e: any) => bytesFromBase64(e)) : [],
+      LocalPort: isSet(object.LocalPort) ? globalThis.Number(object.LocalPort) : 0,
+      VlessRoute: isSet(object.VlessRoute) ? globalThis.Number(object.VlessRoute) : 0,
     };
   },
 
@@ -392,6 +434,15 @@ export const RoutingContext: MessageFns<RoutingContext, "xray.app.router.command
     if (message.OutboundTag !== "") {
       obj.OutboundTag = message.OutboundTag;
     }
+    if (message.LocalIPs?.length) {
+      obj.LocalIPs = message.LocalIPs.map((e) => base64FromBytes(e));
+    }
+    if (message.LocalPort !== 0) {
+      obj.LocalPort = Math.round(message.LocalPort);
+    }
+    if (message.VlessRoute !== 0) {
+      obj.VlessRoute = Math.round(message.VlessRoute);
+    }
     return obj;
   },
 
@@ -420,6 +471,9 @@ export const RoutingContext: MessageFns<RoutingContext, "xray.app.router.command
     );
     message.OutboundGroupTags = object.OutboundGroupTags?.map((e) => e) || [];
     message.OutboundTag = object.OutboundTag ?? "";
+    message.LocalIPs = object.LocalIPs?.map((e) => e) || [];
+    message.LocalPort = object.LocalPort ?? 0;
+    message.VlessRoute = object.VlessRoute ?? 0;
     return message;
   },
 };

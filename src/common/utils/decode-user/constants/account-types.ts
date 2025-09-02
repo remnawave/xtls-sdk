@@ -20,6 +20,9 @@ export const ACCOUNT_TYPES = {
             id: acc.id,
             flow: acc.flow,
             encryption: acc.encryption,
+            xorMode: acc.xorMode,
+            seconds: acc.seconds,
+            padding: acc.padding,
         }),
     },
     [ShadowsocksAccount.$type]: {

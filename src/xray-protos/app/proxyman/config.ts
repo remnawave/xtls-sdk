@@ -9,7 +9,13 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { IPOrDomain } from "../../common/net/address";
 import { PortList } from "../../common/net/port";
 import { TypedMessage } from "../../common/serial/typed_message";
-import { ProxyConfig, StreamConfig } from "../../transport/internet/config";
+import {
+  DomainStrategy,
+  domainStrategyFromJSON,
+  domainStrategyToJSON,
+  ProxyConfig,
+  StreamConfig,
+} from "../../transport/internet/config";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.app.proxyman";
@@ -139,6 +145,7 @@ export interface SenderConfig {
   proxySettings: ProxyConfig | undefined;
   multiplexSettings: MultiplexingConfig | undefined;
   viaCidr: string;
+  targetStrategy: DomainStrategy;
 }
 
 export interface MultiplexingConfig {
@@ -929,6 +936,7 @@ function createBaseSenderConfig(): SenderConfig {
     proxySettings: undefined,
     multiplexSettings: undefined,
     viaCidr: "",
+    targetStrategy: 0,
   };
 }
 
@@ -950,6 +958,9 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
     }
     if (message.viaCidr !== "") {
       writer.uint32(42).string(message.viaCidr);
+    }
+    if (message.targetStrategy !== 0) {
+      writer.uint32(48).int32(message.targetStrategy);
     }
     return writer;
   },
@@ -1001,6 +1012,14 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
           message.viaCidr = reader.string();
           continue;
         }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.targetStrategy = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1020,6 +1039,7 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
         ? MultiplexingConfig.fromJSON(object.multiplexSettings)
         : undefined,
       viaCidr: isSet(object.viaCidr) ? globalThis.String(object.viaCidr) : "",
+      targetStrategy: isSet(object.targetStrategy) ? domainStrategyFromJSON(object.targetStrategy) : 0,
     };
   },
 
@@ -1040,6 +1060,9 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
     if (message.viaCidr !== "") {
       obj.viaCidr = message.viaCidr;
     }
+    if (message.targetStrategy !== 0) {
+      obj.targetStrategy = domainStrategyToJSON(message.targetStrategy);
+    }
     return obj;
   },
 
@@ -1059,6 +1082,7 @@ export const SenderConfig: MessageFns<SenderConfig, "xray.app.proxyman.SenderCon
       ? MultiplexingConfig.fromPartial(object.multiplexSettings)
       : undefined;
     message.viaCidr = object.viaCidr ?? "";
+    message.targetStrategy = object.targetStrategy ?? 0;
     return message;
   },
 };
