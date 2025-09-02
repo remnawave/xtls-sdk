@@ -110,4 +110,12 @@ export class RouterService {
             };
         }
     }
+
+    /**
+     * Gets the raw gRPC client for direct access to all routing service methods
+     * @returns The underlying RoutingServiceClient instance
+     */
+    public get rawClient(): RoutingServiceClient {
+        return this.client;
+    }
 }

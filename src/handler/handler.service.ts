@@ -438,4 +438,12 @@ export class HandlerService {
             };
         }
     }
+
+    /**
+     * Gets the raw gRPC client for direct access to all handler service methods
+     * @returns The underlying HandlerServiceClient instance
+     */
+    public get rawClient(): HandlerServiceClient {
+        return this.client;
+    }
 }

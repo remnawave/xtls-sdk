@@ -437,4 +437,12 @@ export class StatsService {
             };
         }
     }
+
+    /**
+     * Gets the raw gRPC client for direct access to all stats service methods
+     * @returns The underlying StatsServiceClient instance
+     */
+    public get rawClient(): StatsServiceClient {
+        return this.client;
+    }
 }
