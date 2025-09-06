@@ -27,7 +27,8 @@ export interface Config {
   fallbacks: Fallback[];
   decryption: string;
   xorMode: number;
-  seconds: number;
+  secondsFrom: number;
+  secondsTo: number;
   padding: string;
 }
 
@@ -183,7 +184,8 @@ function createBaseConfig(): Config {
     fallbacks: [],
     decryption: "",
     xorMode: 0,
-    seconds: 0,
+    secondsFrom: 0,
+    secondsTo: 0,
     padding: "",
   };
 }
@@ -204,11 +206,14 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     if (message.xorMode !== 0) {
       writer.uint32(32).uint32(message.xorMode);
     }
-    if (message.seconds !== 0) {
-      writer.uint32(40).uint32(message.seconds);
+    if (message.secondsFrom !== 0) {
+      writer.uint32(40).int64(message.secondsFrom);
+    }
+    if (message.secondsTo !== 0) {
+      writer.uint32(48).int64(message.secondsTo);
     }
     if (message.padding !== "") {
-      writer.uint32(50).string(message.padding);
+      writer.uint32(58).string(message.padding);
     }
     return writer;
   },
@@ -257,11 +262,19 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
             break;
           }
 
-          message.seconds = reader.uint32();
+          message.secondsFrom = longToNumber(reader.int64());
           continue;
         }
         case 6: {
-          if (tag !== 50) {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.secondsTo = longToNumber(reader.int64());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
             break;
           }
 
@@ -286,7 +299,8 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
         : [],
       decryption: isSet(object.decryption) ? globalThis.String(object.decryption) : "",
       xorMode: isSet(object.xorMode) ? globalThis.Number(object.xorMode) : 0,
-      seconds: isSet(object.seconds) ? globalThis.Number(object.seconds) : 0,
+      secondsFrom: isSet(object.secondsFrom) ? globalThis.Number(object.secondsFrom) : 0,
+      secondsTo: isSet(object.secondsTo) ? globalThis.Number(object.secondsTo) : 0,
       padding: isSet(object.padding) ? globalThis.String(object.padding) : "",
     };
   },
@@ -305,8 +319,11 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     if (message.xorMode !== 0) {
       obj.xorMode = Math.round(message.xorMode);
     }
-    if (message.seconds !== 0) {
-      obj.seconds = Math.round(message.seconds);
+    if (message.secondsFrom !== 0) {
+      obj.secondsFrom = Math.round(message.secondsFrom);
+    }
+    if (message.secondsTo !== 0) {
+      obj.secondsTo = Math.round(message.secondsTo);
     }
     if (message.padding !== "") {
       obj.padding = message.padding;
@@ -323,7 +340,8 @@ export const Config: MessageFns<Config, "xray.proxy.vless.inbound.Config"> = {
     message.fallbacks = object.fallbacks?.map((e) => Fallback.fromPartial(e)) || [];
     message.decryption = object.decryption ?? "";
     message.xorMode = object.xorMode ?? 0;
-    message.seconds = object.seconds ?? 0;
+    message.secondsFrom = object.secondsFrom ?? 0;
+    message.secondsTo = object.secondsTo ?? 0;
     message.padding = object.padding ?? "";
     return message;
   },
