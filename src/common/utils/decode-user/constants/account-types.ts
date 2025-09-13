@@ -23,6 +23,7 @@ export const ACCOUNT_TYPES = {
             xorMode: acc.xorMode,
             seconds: acc.seconds,
             padding: acc.padding,
+            reverse: acc.reverse,
         }),
     },
     [ShadowsocksAccount.$type]: {

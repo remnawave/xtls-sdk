@@ -10,6 +10,11 @@ import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.vless";
 
+export interface Reverse {
+  $type: "xray.proxy.vless.Reverse";
+  tag: string;
+}
+
 export interface Account {
   $type: "xray.proxy.vless.Account";
   /** ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57". */
@@ -20,10 +25,82 @@ export interface Account {
   xorMode: number;
   seconds: number;
   padding: string;
+  reverse: Reverse | undefined;
 }
 
+function createBaseReverse(): Reverse {
+  return { $type: "xray.proxy.vless.Reverse", tag: "" };
+}
+
+export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
+  $type: "xray.proxy.vless.Reverse" as const,
+
+  encode(message: Reverse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tag !== "") {
+      writer.uint32(10).string(message.tag);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Reverse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReverse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tag = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Reverse {
+    return { $type: Reverse.$type, tag: isSet(object.tag) ? globalThis.String(object.tag) : "" };
+  },
+
+  toJSON(message: Reverse): unknown {
+    const obj: any = {};
+    if (message.tag !== "") {
+      obj.tag = message.tag;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Reverse>): Reverse {
+    return Reverse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Reverse>): Reverse {
+    const message = createBaseReverse();
+    message.tag = object.tag ?? "";
+    return message;
+  },
+};
+
+messageTypeRegistry.set(Reverse.$type, Reverse);
+
 function createBaseAccount(): Account {
-  return { $type: "xray.proxy.vless.Account", id: "", flow: "", encryption: "", xorMode: 0, seconds: 0, padding: "" };
+  return {
+    $type: "xray.proxy.vless.Account",
+    id: "",
+    flow: "",
+    encryption: "",
+    xorMode: 0,
+    seconds: 0,
+    padding: "",
+    reverse: undefined,
+  };
 }
 
 export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
@@ -47,6 +124,9 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     }
     if (message.padding !== "") {
       writer.uint32(50).string(message.padding);
+    }
+    if (message.reverse !== undefined) {
+      Reverse.encode(message.reverse, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -106,6 +186,14 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
           message.padding = reader.string();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.reverse = Reverse.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -124,6 +212,7 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
       xorMode: isSet(object.xorMode) ? globalThis.Number(object.xorMode) : 0,
       seconds: isSet(object.seconds) ? globalThis.Number(object.seconds) : 0,
       padding: isSet(object.padding) ? globalThis.String(object.padding) : "",
+      reverse: isSet(object.reverse) ? Reverse.fromJSON(object.reverse) : undefined,
     };
   },
 
@@ -147,6 +236,9 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     if (message.padding !== "") {
       obj.padding = message.padding;
     }
+    if (message.reverse !== undefined) {
+      obj.reverse = Reverse.toJSON(message.reverse);
+    }
     return obj;
   },
 
@@ -161,6 +253,9 @@ export const Account: MessageFns<Account, "xray.proxy.vless.Account"> = {
     message.xorMode = object.xorMode ?? 0;
     message.seconds = object.seconds ?? 0;
     message.padding = object.padding ?? "";
+    message.reverse = (object.reverse !== undefined && object.reverse !== null)
+      ? Reverse.fromPartial(object.reverse)
+      : undefined;
     return message;
   },
 };
