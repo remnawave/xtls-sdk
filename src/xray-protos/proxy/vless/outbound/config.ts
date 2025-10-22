@@ -13,19 +13,19 @@ export const protobufPackage = "xray.proxy.vless.outbound";
 
 export interface Config {
   $type: "xray.proxy.vless.outbound.Config";
-  vnext: ServerEndpoint[];
+  vnext: ServerEndpoint | undefined;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.vless.outbound.Config", vnext: [] };
+  return { $type: "xray.proxy.vless.outbound.Config", vnext: undefined };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.vless.outbound.Config"> = {
   $type: "xray.proxy.vless.outbound.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.vnext) {
-      ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    if (message.vnext !== undefined) {
+      ServerEndpoint.encode(message.vnext, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -42,7 +42,7 @@ export const Config: MessageFns<Config, "xray.proxy.vless.outbound.Config"> = {
             break;
           }
 
-          message.vnext.push(ServerEndpoint.decode(reader, reader.uint32()));
+          message.vnext = ServerEndpoint.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -55,16 +55,13 @@ export const Config: MessageFns<Config, "xray.proxy.vless.outbound.Config"> = {
   },
 
   fromJSON(object: any): Config {
-    return {
-      $type: Config.$type,
-      vnext: globalThis.Array.isArray(object?.vnext) ? object.vnext.map((e: any) => ServerEndpoint.fromJSON(e)) : [],
-    };
+    return { $type: Config.$type, vnext: isSet(object.vnext) ? ServerEndpoint.fromJSON(object.vnext) : undefined };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.vnext?.length) {
-      obj.vnext = message.vnext.map((e) => ServerEndpoint.toJSON(e));
+    if (message.vnext !== undefined) {
+      obj.vnext = ServerEndpoint.toJSON(message.vnext);
     }
     return obj;
   },
@@ -74,7 +71,9 @@ export const Config: MessageFns<Config, "xray.proxy.vless.outbound.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.vnext = object.vnext?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.vnext = (object.vnext !== undefined && object.vnext !== null)
+      ? ServerEndpoint.fromPartial(object.vnext)
+      : undefined;
     return message;
   },
 };
@@ -88,6 +87,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
 
 export interface MessageFns<T, V extends string> {
   readonly $type: V;

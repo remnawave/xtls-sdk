@@ -85,7 +85,7 @@ export interface ServerConfig {
 
 export interface ClientConfig {
   $type: "xray.proxy.shadowsocks.ClientConfig";
-  server: ServerEndpoint[];
+  server: ServerEndpoint | undefined;
 }
 
 function createBaseAccount(): Account {
@@ -279,15 +279,15 @@ export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.shadowsocks.Serv
 messageTypeRegistry.set(ServerConfig.$type, ServerConfig);
 
 function createBaseClientConfig(): ClientConfig {
-  return { $type: "xray.proxy.shadowsocks.ClientConfig", server: [] };
+  return { $type: "xray.proxy.shadowsocks.ClientConfig", server: undefined };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks.ClientConfig"> = {
   $type: "xray.proxy.shadowsocks.ClientConfig" as const,
 
   encode(message: ClientConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.server) {
-      ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    if (message.server !== undefined) {
+      ServerEndpoint.encode(message.server, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -304,7 +304,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks.Clie
             break;
           }
 
-          message.server.push(ServerEndpoint.decode(reader, reader.uint32()));
+          message.server = ServerEndpoint.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -319,14 +319,14 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks.Clie
   fromJSON(object: any): ClientConfig {
     return {
       $type: ClientConfig.$type,
-      server: globalThis.Array.isArray(object?.server) ? object.server.map((e: any) => ServerEndpoint.fromJSON(e)) : [],
+      server: isSet(object.server) ? ServerEndpoint.fromJSON(object.server) : undefined,
     };
   },
 
   toJSON(message: ClientConfig): unknown {
     const obj: any = {};
-    if (message.server?.length) {
-      obj.server = message.server.map((e) => ServerEndpoint.toJSON(e));
+    if (message.server !== undefined) {
+      obj.server = ServerEndpoint.toJSON(message.server);
     }
     return obj;
   },
@@ -336,7 +336,9 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks.Clie
   },
   fromPartial(object: DeepPartial<ClientConfig>): ClientConfig {
     const message = createBaseClientConfig();
-    message.server = object.server?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.server = (object.server !== undefined && object.server !== null)
+      ? ServerEndpoint.fromPartial(object.server)
+      : undefined;
     return message;
   },
 };

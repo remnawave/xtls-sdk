@@ -24,11 +24,7 @@ export interface DefaultConfig {
 export interface Config {
   $type: "xray.proxy.vmess.inbound.Config";
   user: User[];
-  default:
-    | DefaultConfig
-    | undefined;
-  /** 4 is for legacy setting */
-  detour: DetourConfig | undefined;
+  default: DefaultConfig | undefined;
 }
 
 function createBaseDetourConfig(): DetourConfig {
@@ -156,7 +152,7 @@ export const DefaultConfig: MessageFns<DefaultConfig, "xray.proxy.vmess.inbound.
 messageTypeRegistry.set(DefaultConfig.$type, DefaultConfig);
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.vmess.inbound.Config", user: [], default: undefined, detour: undefined };
+  return { $type: "xray.proxy.vmess.inbound.Config", user: [], default: undefined };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
@@ -168,9 +164,6 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
     }
     if (message.default !== undefined) {
       DefaultConfig.encode(message.default, writer.uint32(18).fork()).join();
-    }
-    if (message.detour !== undefined) {
-      DetourConfig.encode(message.detour, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -198,14 +191,6 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
           message.default = DefaultConfig.decode(reader, reader.uint32());
           continue;
         }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.detour = DetourConfig.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -220,7 +205,6 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
       $type: Config.$type,
       user: globalThis.Array.isArray(object?.user) ? object.user.map((e: any) => User.fromJSON(e)) : [],
       default: isSet(object.default) ? DefaultConfig.fromJSON(object.default) : undefined,
-      detour: isSet(object.detour) ? DetourConfig.fromJSON(object.detour) : undefined,
     };
   },
 
@@ -231,9 +215,6 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
     }
     if (message.default !== undefined) {
       obj.default = DefaultConfig.toJSON(message.default);
-    }
-    if (message.detour !== undefined) {
-      obj.detour = DetourConfig.toJSON(message.detour);
     }
     return obj;
   },
@@ -246,9 +227,6 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.inbound.Config"> = {
     message.user = object.user?.map((e) => User.fromPartial(e)) || [];
     message.default = (object.default !== undefined && object.default !== null)
       ? DefaultConfig.fromPartial(object.default)
-      : undefined;
-    message.detour = (object.detour !== undefined && object.detour !== null)
-      ? DetourConfig.fromPartial(object.detour)
       : undefined;
     return message;
   },

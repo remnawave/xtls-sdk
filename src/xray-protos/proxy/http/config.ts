@@ -41,7 +41,7 @@ export interface Header {
 export interface ClientConfig {
   $type: "xray.proxy.http.ClientConfig";
   /** Sever is a list of HTTP server addresses. */
-  server: ServerEndpoint[];
+  server: ServerEndpoint | undefined;
   header: Header[];
 }
 
@@ -411,15 +411,15 @@ export const Header: MessageFns<Header, "xray.proxy.http.Header"> = {
 messageTypeRegistry.set(Header.$type, Header);
 
 function createBaseClientConfig(): ClientConfig {
-  return { $type: "xray.proxy.http.ClientConfig", server: [], header: [] };
+  return { $type: "xray.proxy.http.ClientConfig", server: undefined, header: [] };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.http.ClientConfig"> = {
   $type: "xray.proxy.http.ClientConfig" as const,
 
   encode(message: ClientConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.server) {
-      ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    if (message.server !== undefined) {
+      ServerEndpoint.encode(message.server, writer.uint32(10).fork()).join();
     }
     for (const v of message.header) {
       Header.encode(v!, writer.uint32(18).fork()).join();
@@ -439,7 +439,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.http.ClientConfi
             break;
           }
 
-          message.server.push(ServerEndpoint.decode(reader, reader.uint32()));
+          message.server = ServerEndpoint.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -462,15 +462,15 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.http.ClientConfi
   fromJSON(object: any): ClientConfig {
     return {
       $type: ClientConfig.$type,
-      server: globalThis.Array.isArray(object?.server) ? object.server.map((e: any) => ServerEndpoint.fromJSON(e)) : [],
+      server: isSet(object.server) ? ServerEndpoint.fromJSON(object.server) : undefined,
       header: globalThis.Array.isArray(object?.header) ? object.header.map((e: any) => Header.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: ClientConfig): unknown {
     const obj: any = {};
-    if (message.server?.length) {
-      obj.server = message.server.map((e) => ServerEndpoint.toJSON(e));
+    if (message.server !== undefined) {
+      obj.server = ServerEndpoint.toJSON(message.server);
     }
     if (message.header?.length) {
       obj.header = message.header.map((e) => Header.toJSON(e));
@@ -483,7 +483,9 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.http.ClientConfi
   },
   fromPartial(object: DeepPartial<ClientConfig>): ClientConfig {
     const message = createBaseClientConfig();
-    message.server = object.server?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.server = (object.server !== undefined && object.server !== null)
+      ? ServerEndpoint.fromPartial(object.server)
+      : undefined;
     message.header = object.header?.map((e) => Header.fromPartial(e)) || [];
     return message;
   },

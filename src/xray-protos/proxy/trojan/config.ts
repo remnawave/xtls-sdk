@@ -29,7 +29,7 @@ export interface Fallback {
 
 export interface ClientConfig {
   $type: "xray.proxy.trojan.ClientConfig";
-  server: ServerEndpoint[];
+  server: ServerEndpoint | undefined;
 }
 
 export interface ServerConfig {
@@ -246,15 +246,15 @@ export const Fallback: MessageFns<Fallback, "xray.proxy.trojan.Fallback"> = {
 messageTypeRegistry.set(Fallback.$type, Fallback);
 
 function createBaseClientConfig(): ClientConfig {
-  return { $type: "xray.proxy.trojan.ClientConfig", server: [] };
+  return { $type: "xray.proxy.trojan.ClientConfig", server: undefined };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.trojan.ClientConfig"> = {
   $type: "xray.proxy.trojan.ClientConfig" as const,
 
   encode(message: ClientConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.server) {
-      ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    if (message.server !== undefined) {
+      ServerEndpoint.encode(message.server, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -271,7 +271,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.trojan.ClientCon
             break;
           }
 
-          message.server.push(ServerEndpoint.decode(reader, reader.uint32()));
+          message.server = ServerEndpoint.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -286,14 +286,14 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.trojan.ClientCon
   fromJSON(object: any): ClientConfig {
     return {
       $type: ClientConfig.$type,
-      server: globalThis.Array.isArray(object?.server) ? object.server.map((e: any) => ServerEndpoint.fromJSON(e)) : [],
+      server: isSet(object.server) ? ServerEndpoint.fromJSON(object.server) : undefined,
     };
   },
 
   toJSON(message: ClientConfig): unknown {
     const obj: any = {};
-    if (message.server?.length) {
-      obj.server = message.server.map((e) => ServerEndpoint.toJSON(e));
+    if (message.server !== undefined) {
+      obj.server = ServerEndpoint.toJSON(message.server);
     }
     return obj;
   },
@@ -303,7 +303,9 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.trojan.ClientCon
   },
   fromPartial(object: DeepPartial<ClientConfig>): ClientConfig {
     const message = createBaseClientConfig();
-    message.server = object.server?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.server = (object.server !== undefined && object.server !== null)
+      ? ServerEndpoint.fromPartial(object.server)
+      : undefined;
     return message;
   },
 };

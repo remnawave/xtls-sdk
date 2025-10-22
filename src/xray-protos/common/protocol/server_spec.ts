@@ -16,11 +16,11 @@ export interface ServerEndpoint {
   $type: "xray.common.protocol.ServerEndpoint";
   address: IPOrDomain | undefined;
   port: number;
-  user: User[];
+  user: User | undefined;
 }
 
 function createBaseServerEndpoint(): ServerEndpoint {
-  return { $type: "xray.common.protocol.ServerEndpoint", address: undefined, port: 0, user: [] };
+  return { $type: "xray.common.protocol.ServerEndpoint", address: undefined, port: 0, user: undefined };
 }
 
 export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.ServerEndpoint"> = {
@@ -33,8 +33,8 @@ export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.Se
     if (message.port !== 0) {
       writer.uint32(16).uint32(message.port);
     }
-    for (const v of message.user) {
-      User.encode(v!, writer.uint32(26).fork()).join();
+    if (message.user !== undefined) {
+      User.encode(message.user, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -67,7 +67,7 @@ export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.Se
             break;
           }
 
-          message.user.push(User.decode(reader, reader.uint32()));
+          message.user = User.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -84,7 +84,7 @@ export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.Se
       $type: ServerEndpoint.$type,
       address: isSet(object.address) ? IPOrDomain.fromJSON(object.address) : undefined,
       port: isSet(object.port) ? globalThis.Number(object.port) : 0,
-      user: globalThis.Array.isArray(object?.user) ? object.user.map((e: any) => User.fromJSON(e)) : [],
+      user: isSet(object.user) ? User.fromJSON(object.user) : undefined,
     };
   },
 
@@ -96,8 +96,8 @@ export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.Se
     if (message.port !== 0) {
       obj.port = Math.round(message.port);
     }
-    if (message.user?.length) {
-      obj.user = message.user.map((e) => User.toJSON(e));
+    if (message.user !== undefined) {
+      obj.user = User.toJSON(message.user);
     }
     return obj;
   },
@@ -111,7 +111,7 @@ export const ServerEndpoint: MessageFns<ServerEndpoint, "xray.common.protocol.Se
       ? IPOrDomain.fromPartial(object.address)
       : undefined;
     message.port = object.port ?? 0;
-    message.user = object.user?.map((e) => User.fromPartial(e)) || [];
+    message.user = (object.user !== undefined && object.user !== null) ? User.fromPartial(object.user) : undefined;
     return message;
   },
 };

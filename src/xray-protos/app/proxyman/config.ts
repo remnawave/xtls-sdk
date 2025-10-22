@@ -24,75 +24,6 @@ export interface InboundConfig {
   $type: "xray.app.proxyman.InboundConfig";
 }
 
-export interface AllocationStrategy {
-  $type: "xray.app.proxyman.AllocationStrategy";
-  type: AllocationStrategy_Type;
-  /**
-   * Number of handlers (ports) running in parallel.
-   * Default value is 3 if unset.
-   */
-  concurrency:
-    | AllocationStrategy_AllocationStrategyConcurrency
-    | undefined;
-  /**
-   * Number of minutes before a handler is regenerated.
-   * Default value is 5 if unset.
-   */
-  refresh: AllocationStrategy_AllocationStrategyRefresh | undefined;
-}
-
-export enum AllocationStrategy_Type {
-  /** Always - Always allocate all connection handlers. */
-  Always = 0,
-  /** Random - Randomly allocate specific range of handlers. */
-  Random = 1,
-  /** External - External. Not supported yet. */
-  External = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function allocationStrategy_TypeFromJSON(object: any): AllocationStrategy_Type {
-  switch (object) {
-    case 0:
-    case "Always":
-      return AllocationStrategy_Type.Always;
-    case 1:
-    case "Random":
-      return AllocationStrategy_Type.Random;
-    case 2:
-    case "External":
-      return AllocationStrategy_Type.External;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return AllocationStrategy_Type.UNRECOGNIZED;
-  }
-}
-
-export function allocationStrategy_TypeToJSON(object: AllocationStrategy_Type): string {
-  switch (object) {
-    case AllocationStrategy_Type.Always:
-      return "Always";
-    case AllocationStrategy_Type.Random:
-      return "Random";
-    case AllocationStrategy_Type.External:
-      return "External";
-    case AllocationStrategy_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface AllocationStrategy_AllocationStrategyConcurrency {
-  $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency";
-  value: number;
-}
-
-export interface AllocationStrategy_AllocationStrategyRefresh {
-  $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyRefresh";
-  value: number;
-}
-
 export interface SniffingConfig {
   $type: "xray.app.proxyman.SniffingConfig";
   /** Whether or not to enable content sniffing on an inbound connection. */
@@ -120,7 +51,6 @@ export interface ReceiverConfig {
     | undefined;
   /** Listen specifies the IP address that the Receiver should listen on. */
   listen: IPOrDomain | undefined;
-  allocationStrategy: AllocationStrategy | undefined;
   streamSettings: StreamConfig | undefined;
   receiveOriginalDestination: boolean;
   sniffingSettings: SniffingConfig | undefined;
@@ -206,267 +136,6 @@ export const InboundConfig: MessageFns<InboundConfig, "xray.app.proxyman.Inbound
 };
 
 messageTypeRegistry.set(InboundConfig.$type, InboundConfig);
-
-function createBaseAllocationStrategy(): AllocationStrategy {
-  return { $type: "xray.app.proxyman.AllocationStrategy", type: 0, concurrency: undefined, refresh: undefined };
-}
-
-export const AllocationStrategy: MessageFns<AllocationStrategy, "xray.app.proxyman.AllocationStrategy"> = {
-  $type: "xray.app.proxyman.AllocationStrategy" as const,
-
-  encode(message: AllocationStrategy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    if (message.concurrency !== undefined) {
-      AllocationStrategy_AllocationStrategyConcurrency.encode(message.concurrency, writer.uint32(18).fork()).join();
-    }
-    if (message.refresh !== undefined) {
-      AllocationStrategy_AllocationStrategyRefresh.encode(message.refresh, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AllocationStrategy {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAllocationStrategy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.concurrency = AllocationStrategy_AllocationStrategyConcurrency.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.refresh = AllocationStrategy_AllocationStrategyRefresh.decode(reader, reader.uint32());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AllocationStrategy {
-    return {
-      $type: AllocationStrategy.$type,
-      type: isSet(object.type) ? allocationStrategy_TypeFromJSON(object.type) : 0,
-      concurrency: isSet(object.concurrency)
-        ? AllocationStrategy_AllocationStrategyConcurrency.fromJSON(object.concurrency)
-        : undefined,
-      refresh: isSet(object.refresh)
-        ? AllocationStrategy_AllocationStrategyRefresh.fromJSON(object.refresh)
-        : undefined,
-    };
-  },
-
-  toJSON(message: AllocationStrategy): unknown {
-    const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = allocationStrategy_TypeToJSON(message.type);
-    }
-    if (message.concurrency !== undefined) {
-      obj.concurrency = AllocationStrategy_AllocationStrategyConcurrency.toJSON(message.concurrency);
-    }
-    if (message.refresh !== undefined) {
-      obj.refresh = AllocationStrategy_AllocationStrategyRefresh.toJSON(message.refresh);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<AllocationStrategy>): AllocationStrategy {
-    return AllocationStrategy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<AllocationStrategy>): AllocationStrategy {
-    const message = createBaseAllocationStrategy();
-    message.type = object.type ?? 0;
-    message.concurrency = (object.concurrency !== undefined && object.concurrency !== null)
-      ? AllocationStrategy_AllocationStrategyConcurrency.fromPartial(object.concurrency)
-      : undefined;
-    message.refresh = (object.refresh !== undefined && object.refresh !== null)
-      ? AllocationStrategy_AllocationStrategyRefresh.fromPartial(object.refresh)
-      : undefined;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(AllocationStrategy.$type, AllocationStrategy);
-
-function createBaseAllocationStrategy_AllocationStrategyConcurrency(): AllocationStrategy_AllocationStrategyConcurrency {
-  return { $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency", value: 0 };
-}
-
-export const AllocationStrategy_AllocationStrategyConcurrency: MessageFns<
-  AllocationStrategy_AllocationStrategyConcurrency,
-  "xray.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency"
-> = {
-  $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency" as const,
-
-  encode(
-    message: AllocationStrategy_AllocationStrategyConcurrency,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
-    if (message.value !== 0) {
-      writer.uint32(8).uint32(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AllocationStrategy_AllocationStrategyConcurrency {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAllocationStrategy_AllocationStrategyConcurrency();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.value = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AllocationStrategy_AllocationStrategyConcurrency {
-    return {
-      $type: AllocationStrategy_AllocationStrategyConcurrency.$type,
-      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
-    };
-  },
-
-  toJSON(message: AllocationStrategy_AllocationStrategyConcurrency): unknown {
-    const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
-    return obj;
-  },
-
-  create(
-    base?: DeepPartial<AllocationStrategy_AllocationStrategyConcurrency>,
-  ): AllocationStrategy_AllocationStrategyConcurrency {
-    return AllocationStrategy_AllocationStrategyConcurrency.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<AllocationStrategy_AllocationStrategyConcurrency>,
-  ): AllocationStrategy_AllocationStrategyConcurrency {
-    const message = createBaseAllocationStrategy_AllocationStrategyConcurrency();
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(
-  AllocationStrategy_AllocationStrategyConcurrency.$type,
-  AllocationStrategy_AllocationStrategyConcurrency,
-);
-
-function createBaseAllocationStrategy_AllocationStrategyRefresh(): AllocationStrategy_AllocationStrategyRefresh {
-  return { $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyRefresh", value: 0 };
-}
-
-export const AllocationStrategy_AllocationStrategyRefresh: MessageFns<
-  AllocationStrategy_AllocationStrategyRefresh,
-  "xray.app.proxyman.AllocationStrategy.AllocationStrategyRefresh"
-> = {
-  $type: "xray.app.proxyman.AllocationStrategy.AllocationStrategyRefresh" as const,
-
-  encode(
-    message: AllocationStrategy_AllocationStrategyRefresh,
-    writer: BinaryWriter = new BinaryWriter(),
-  ): BinaryWriter {
-    if (message.value !== 0) {
-      writer.uint32(8).uint32(message.value);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): AllocationStrategy_AllocationStrategyRefresh {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAllocationStrategy_AllocationStrategyRefresh();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.value = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): AllocationStrategy_AllocationStrategyRefresh {
-    return {
-      $type: AllocationStrategy_AllocationStrategyRefresh.$type,
-      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
-    };
-  },
-
-  toJSON(message: AllocationStrategy_AllocationStrategyRefresh): unknown {
-    const obj: any = {};
-    if (message.value !== 0) {
-      obj.value = Math.round(message.value);
-    }
-    return obj;
-  },
-
-  create(
-    base?: DeepPartial<AllocationStrategy_AllocationStrategyRefresh>,
-  ): AllocationStrategy_AllocationStrategyRefresh {
-    return AllocationStrategy_AllocationStrategyRefresh.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<AllocationStrategy_AllocationStrategyRefresh>,
-  ): AllocationStrategy_AllocationStrategyRefresh {
-    const message = createBaseAllocationStrategy_AllocationStrategyRefresh();
-    message.value = object.value ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(
-  AllocationStrategy_AllocationStrategyRefresh.$type,
-  AllocationStrategy_AllocationStrategyRefresh,
-);
 
 function createBaseSniffingConfig(): SniffingConfig {
   return {
@@ -613,7 +282,6 @@ function createBaseReceiverConfig(): ReceiverConfig {
     $type: "xray.app.proxyman.ReceiverConfig",
     portList: undefined,
     listen: undefined,
-    allocationStrategy: undefined,
     streamSettings: undefined,
     receiveOriginalDestination: false,
     sniffingSettings: undefined,
@@ -630,17 +298,14 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
     if (message.listen !== undefined) {
       IPOrDomain.encode(message.listen, writer.uint32(18).fork()).join();
     }
-    if (message.allocationStrategy !== undefined) {
-      AllocationStrategy.encode(message.allocationStrategy, writer.uint32(26).fork()).join();
-    }
     if (message.streamSettings !== undefined) {
-      StreamConfig.encode(message.streamSettings, writer.uint32(34).fork()).join();
+      StreamConfig.encode(message.streamSettings, writer.uint32(26).fork()).join();
     }
     if (message.receiveOriginalDestination !== false) {
-      writer.uint32(40).bool(message.receiveOriginalDestination);
+      writer.uint32(32).bool(message.receiveOriginalDestination);
     }
     if (message.sniffingSettings !== undefined) {
-      SniffingConfig.encode(message.sniffingSettings, writer.uint32(58).fork()).join();
+      SniffingConfig.encode(message.sniffingSettings, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -673,27 +338,19 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
             break;
           }
 
-          message.allocationStrategy = AllocationStrategy.decode(reader, reader.uint32());
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
           message.streamSettings = StreamConfig.decode(reader, reader.uint32());
           continue;
         }
-        case 5: {
-          if (tag !== 40) {
+        case 4: {
+          if (tag !== 32) {
             break;
           }
 
           message.receiveOriginalDestination = reader.bool();
           continue;
         }
-        case 7: {
-          if (tag !== 58) {
+        case 6: {
+          if (tag !== 50) {
             break;
           }
 
@@ -714,9 +371,6 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
       $type: ReceiverConfig.$type,
       portList: isSet(object.portList) ? PortList.fromJSON(object.portList) : undefined,
       listen: isSet(object.listen) ? IPOrDomain.fromJSON(object.listen) : undefined,
-      allocationStrategy: isSet(object.allocationStrategy)
-        ? AllocationStrategy.fromJSON(object.allocationStrategy)
-        : undefined,
       streamSettings: isSet(object.streamSettings) ? StreamConfig.fromJSON(object.streamSettings) : undefined,
       receiveOriginalDestination: isSet(object.receiveOriginalDestination)
         ? globalThis.Boolean(object.receiveOriginalDestination)
@@ -732,9 +386,6 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
     }
     if (message.listen !== undefined) {
       obj.listen = IPOrDomain.toJSON(message.listen);
-    }
-    if (message.allocationStrategy !== undefined) {
-      obj.allocationStrategy = AllocationStrategy.toJSON(message.allocationStrategy);
     }
     if (message.streamSettings !== undefined) {
       obj.streamSettings = StreamConfig.toJSON(message.streamSettings);
@@ -758,9 +409,6 @@ export const ReceiverConfig: MessageFns<ReceiverConfig, "xray.app.proxyman.Recei
       : undefined;
     message.listen = (object.listen !== undefined && object.listen !== null)
       ? IPOrDomain.fromPartial(object.listen)
-      : undefined;
-    message.allocationStrategy = (object.allocationStrategy !== undefined && object.allocationStrategy !== null)
-      ? AllocationStrategy.fromPartial(object.allocationStrategy)
       : undefined;
     message.streamSettings = (object.streamSettings !== undefined && object.streamSettings !== null)
       ? StreamConfig.fromPartial(object.streamSettings)

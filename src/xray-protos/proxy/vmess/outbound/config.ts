@@ -13,19 +13,19 @@ export const protobufPackage = "xray.proxy.vmess.outbound";
 
 export interface Config {
   $type: "xray.proxy.vmess.outbound.Config";
-  Receiver: ServerEndpoint[];
+  Receiver: ServerEndpoint | undefined;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.vmess.outbound.Config", Receiver: [] };
+  return { $type: "xray.proxy.vmess.outbound.Config", Receiver: undefined };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.vmess.outbound.Config"> = {
   $type: "xray.proxy.vmess.outbound.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.Receiver) {
-      ServerEndpoint.encode(v!, writer.uint32(10).fork()).join();
+    if (message.Receiver !== undefined) {
+      ServerEndpoint.encode(message.Receiver, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -42,7 +42,7 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.outbound.Config"> = {
             break;
           }
 
-          message.Receiver.push(ServerEndpoint.decode(reader, reader.uint32()));
+          message.Receiver = ServerEndpoint.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -57,16 +57,14 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.outbound.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      Receiver: globalThis.Array.isArray(object?.Receiver)
-        ? object.Receiver.map((e: any) => ServerEndpoint.fromJSON(e))
-        : [],
+      Receiver: isSet(object.Receiver) ? ServerEndpoint.fromJSON(object.Receiver) : undefined,
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.Receiver?.length) {
-      obj.Receiver = message.Receiver.map((e) => ServerEndpoint.toJSON(e));
+    if (message.Receiver !== undefined) {
+      obj.Receiver = ServerEndpoint.toJSON(message.Receiver);
     }
     return obj;
   },
@@ -76,7 +74,9 @@ export const Config: MessageFns<Config, "xray.proxy.vmess.outbound.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.Receiver = object.Receiver?.map((e) => ServerEndpoint.fromPartial(e)) || [];
+    message.Receiver = (object.Receiver !== undefined && object.Receiver !== null)
+      ? ServerEndpoint.fromPartial(object.Receiver)
+      : undefined;
     return message;
   },
 };
@@ -90,6 +90,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
 
 export interface MessageFns<T, V extends string> {
   readonly $type: V;
