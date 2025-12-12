@@ -46,8 +46,7 @@ export const decodeUser = (user: User): DecodedUser => {
         throw new Error(`Unknown account type: ${accountType}`);
     }
 
-    const accountBuffer = Buffer.from(user.account.value);
-    const decodedAccount = accountConfig.decoder.decode(accountBuffer);
+    const decodedAccount = accountConfig.decoder.decode(user.account.value);
 
     return {
         [accountConfig.protocol]: accountConfig.getCredentials(decodedAccount as never),

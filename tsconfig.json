@@ -25,6 +25,8 @@
     "src/xray-protos/core/**/*.ts",
     "src/xray-protos/app/router/**/*.ts",
     "src/xray-protos/app/observatory/**/*.ts",
-    "src/xray-protos/app/dns/**/*.ts"
+    "src/xray-protos/app/dns/**/*.ts",
+    "build/**/*",
+    "node_modules/**/*"
   ]
 }

@@ -24,6 +24,8 @@ export const ACCOUNT_TYPES = {
             seconds: acc.seconds,
             padding: acc.padding,
             reverse: acc.reverse,
+            testpre: acc.testpre,
+            testseed: acc.testseed,
         }),
     },
     [ShadowsocksAccount.$type]: {

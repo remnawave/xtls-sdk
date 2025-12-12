@@ -9,7 +9,11 @@ import { User } from '../xray-protos/common/protocol/user';
 import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
 import { ISdkResponse } from '../common/types/sdk-response';
 import { HANDLER_ERRORS } from '../common/errors';
-import { AddUserResponseModel, GetInboundUsersResponseModel } from './models';
+import {
+    AddUserResponseModel,
+    GetInboundUsersResponseModel,
+    RemoveUserResponseModel,
+} from './models';
 import {
     IAddHttpUser,
     IAddShadowsocks2022User,
@@ -24,7 +28,6 @@ import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/
 import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
 import { Account as SocksAccount } from '../xray-protos/proxy/socks/config';
 import { Account as HttpAccount } from '../xray-protos/proxy/http/config';
-import { RemoveUserResponseModel } from './models/remove-user/remove-user.response.model';
 
 /**
  * Service for managing Xray inbound handlers and their users

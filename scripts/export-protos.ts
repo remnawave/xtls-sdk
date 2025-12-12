@@ -6,7 +6,7 @@ import * as tar from 'tar';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const VERSION = '25.10.15';
+const VERSION = '25.12.8';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
 const TARGET_URL = `https://github.com/XTLS/Xray-core/archive/refs/tags/v${VERSION}.tar.gz`;
 
@@ -19,7 +19,7 @@ async function downloadTarGz(url: string, dest: string) {
     if (!response.ok) throw new Error(`Failed to download file: ${response.statusText}`);
 
     const buffer = await response.arrayBuffer();
-    fs.writeFileSync(dest, Buffer.from(buffer));
+    fs.writeFileSync(dest, new Uint8Array(buffer));
     console.log(`Core extracted to ${dest}`);
 }
 
