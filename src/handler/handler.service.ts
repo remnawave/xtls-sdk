@@ -1,19 +1,11 @@
 import { createClient, Channel } from 'nice-grpc';
+
 import {
     AddUserOperation,
     HandlerServiceClient,
     HandlerServiceDefinition,
     RemoveUserOperation,
 } from '../xray-protos/app/proxyman/command/command';
-import { User } from '../xray-protos/common/protocol/user';
-import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
-import { ISdkResponse } from '../common/types/sdk-response';
-import { HANDLER_ERRORS } from '../common/errors';
-import {
-    AddUserResponseModel,
-    GetInboundUsersResponseModel,
-    RemoveUserResponseModel,
-} from './models';
 import {
     IAddHttpUser,
     IAddShadowsocks2022User,
@@ -22,12 +14,21 @@ import {
     IAddTrojanUser,
     IAddVlessUser,
 } from './interfaces';
+import {
+    AddUserResponseModel,
+    GetInboundUsersResponseModel,
+    RemoveUserResponseModel,
+} from './models';
+import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
+import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
+import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
 import { Account as TrojanAccount } from '../xray-protos/proxy/trojan/config';
 import { Account as VlessAccount } from '../xray-protos/proxy/vless/account';
-import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
-import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
 import { Account as SocksAccount } from '../xray-protos/proxy/socks/config';
 import { Account as HttpAccount } from '../xray-protos/proxy/http/config';
+import { ISdkResponse } from '../common/types/sdk-response';
+import { User } from '../xray-protos/common/protocol/user';
+import { HANDLER_ERRORS } from '../common/errors';
 
 /**
  * Service for managing Xray inbound handlers and their users
@@ -90,7 +91,7 @@ export class HandlerService {
      */
     public async addTrojanUser(data: IAddTrojanUser): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -137,7 +138,7 @@ export class HandlerService {
      */
     public async addVlessUser(data: IAddVlessUser): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -188,7 +189,7 @@ export class HandlerService {
         data: IAddShadowsocksUser,
     ): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -239,7 +240,7 @@ export class HandlerService {
         data: IAddShadowsocks2022User,
     ): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -286,7 +287,7 @@ export class HandlerService {
      */
     public async addSocksUser(data: IAddSocksUser): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -334,7 +335,7 @@ export class HandlerService {
      */
     public async addHttpUser(data: IAddHttpUser): Promise<ISdkResponse<AddUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: data.tag,
                 operation: createTypedMessage(AddUserOperation, {
                     user: User.create({
@@ -386,7 +387,7 @@ export class HandlerService {
         username: string,
     ): Promise<ISdkResponse<RemoveUserResponseModel>> {
         try {
-            const response = await this.client.alterInbound({
+            await this.client.alterInbound({
                 tag: tag,
                 operation: createTypedMessage(RemoveUserOperation, { email: username }),
             });

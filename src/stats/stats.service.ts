@@ -1,10 +1,5 @@
 import { Channel, createClient } from 'nice-grpc';
-import {
-    StatsServiceDefinition,
-    StatsServiceClient,
-} from '../xray-protos/app/stats/command/command';
-import { ISdkResponse } from '../common/types';
-import { STATS_ERRORS } from '../common/errors';
+
 import {
     GetAllUsersStatsResponseModel,
     GetUserStatsResponseModel,
@@ -15,6 +10,12 @@ import {
     GetAllOutboundsStatsResponseModel,
     GetOutboundStatsResponseModel,
 } from './models';
+import {
+    StatsServiceDefinition,
+    StatsServiceClient,
+} from '../xray-protos/app/stats/command/command';
+import { STATS_ERRORS } from '../common/errors';
+import { ISdkResponse } from '../common/types';
 
 /**
  * Service class for interacting with Xray server statistics.

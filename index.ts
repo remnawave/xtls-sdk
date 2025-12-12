@@ -1,7 +1,8 @@
 import { createChannel, Channel, ChannelOptions } from 'nice-grpc';
-import { StatsService } from './src/stats/stats.service';
+
 import { HandlerService } from './src/handler/handler.service';
 import { RouterService } from './src/router/router.service';
+import { StatsService } from './src/stats/stats.service';
 
 export class XtlsApi {
     public readonly channel: Channel;

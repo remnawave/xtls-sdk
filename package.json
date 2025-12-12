@@ -49,6 +49,16 @@
     "@types/node": "^24.10.2",
     "grpc-tools": "^1.13.1",
     "ts-proto": "^2.8.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "eslint": "9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-paths": "^1.1.0",
+    "eslint-plugin-perfectionist": "^4.15.1",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.7.4",
+    "tsconfig-paths": "^4.2.0",
+    "typescript-eslint": "^8.49.0"
   }
 }
