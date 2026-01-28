@@ -4,18 +4,20 @@ import { HandlerService } from './src/handler/handler.service';
 import { RouterService } from './src/router/router.service';
 import { StatsService } from './src/stats/stats.service';
 
+export interface XtlsApiOptions {
+    connectionUrl: string;
+    options?: ChannelOptions;
+    credentials?: ChannelCredentials;
+}
+
 export class XtlsApi {
     public readonly channel: Channel;
     public readonly stats: StatsService;
     public readonly handler: HandlerService;
     public readonly router: RouterService;
-    constructor(
-        ip: string,
-        port: string,
-        options?: ChannelOptions,
-        credentials?: ChannelCredentials,
-    ) {
-        this.channel = createChannel(`${ip}:${port}`, credentials, {
+
+    constructor({ connectionUrl, options, credentials }: XtlsApiOptions) {
+        this.channel = createChannel(connectionUrl, credentials, {
             ...options,
         });
         this.stats = new StatsService(this.channel);
