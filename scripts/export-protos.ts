@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as tar from 'tar';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as tar from 'tar';
 
-const VERSION = '25.12.8';
+const VERSION = '26.2.6';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
 const TARGET_URL = `https://github.com/XTLS/Xray-core/archive/refs/tags/v${VERSION}.tar.gz`;
 

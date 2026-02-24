@@ -17,6 +17,7 @@ export default [
     {
         ignores: [
             '**/.eslintrc.js',
+            'eslint.config.mjs',
             'prisma/**/*',
             '.hygen.js',
             '.hygen/**/*',

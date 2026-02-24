@@ -16,8 +16,11 @@
     "declaration": true,
     "declarationMap": true,
   },
+  "include": [
+    "src/**/*",
+    "scripts/**/*"
+  ],
   "exclude": [
-    "scripts/**/*",
     "tests/**/*",
     "**/*.spec.ts",
     "**/*.test.ts",
