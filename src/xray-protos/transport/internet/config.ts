@@ -183,7 +183,31 @@ export interface StreamConfig {
   securitySettings: TypedMessage[];
   udpmasks: TypedMessage[];
   tcpmasks: TypedMessage[];
+  quicParams: QuicParams | undefined;
   socketSettings: SocketConfig | undefined;
+}
+
+export interface UdpHop {
+  $type: "xray.transport.internet.UdpHop";
+  ports: number[];
+  intervalMin: number;
+  intervalMax: number;
+}
+
+export interface QuicParams {
+  $type: "xray.transport.internet.QuicParams";
+  congestion: string;
+  brutalUp: number;
+  brutalDown: number;
+  udpHop: UdpHop | undefined;
+  initStreamReceiveWindow: number;
+  maxStreamReceiveWindow: number;
+  initConnReceiveWindow: number;
+  maxConnReceiveWindow: number;
+  maxIdleTimeout: number;
+  keepAlivePeriod: number;
+  disablePathMtuDiscovery: boolean;
+  maxIncomingStreams: number;
 }
 
 export interface ProxyConfig {
@@ -385,6 +409,7 @@ function createBaseStreamConfig(): StreamConfig {
     securitySettings: [],
     udpmasks: [],
     tcpmasks: [],
+    quicParams: undefined,
     socketSettings: undefined,
   };
 }
@@ -416,6 +441,9 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
     }
     for (const v of message.tcpmasks) {
       TypedMessage.encode(v!, writer.uint32(90).fork()).join();
+    }
+    if (message.quicParams !== undefined) {
+      QuicParams.encode(message.quicParams, writer.uint32(98).fork()).join();
     }
     if (message.socketSettings !== undefined) {
       SocketConfig.encode(message.socketSettings, writer.uint32(50).fork()).join();
@@ -494,6 +522,14 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
           message.tcpmasks.push(TypedMessage.decode(reader, reader.uint32()));
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.quicParams = QuicParams.decode(reader, reader.uint32());
+          continue;
+        }
         case 6: {
           if (tag !== 50) {
             break;
@@ -542,6 +578,11 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
       tcpmasks: globalThis.Array.isArray(object?.tcpmasks)
         ? object.tcpmasks.map((e: any) => TypedMessage.fromJSON(e))
         : [],
+      quicParams: isSet(object.quicParams)
+        ? QuicParams.fromJSON(object.quicParams)
+        : isSet(object.quic_params)
+        ? QuicParams.fromJSON(object.quic_params)
+        : undefined,
       socketSettings: isSet(object.socketSettings)
         ? SocketConfig.fromJSON(object.socketSettings)
         : isSet(object.socket_settings)
@@ -576,6 +617,9 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
     if (message.tcpmasks?.length) {
       obj.tcpmasks = message.tcpmasks.map((e) => TypedMessage.toJSON(e));
     }
+    if (message.quicParams !== undefined) {
+      obj.quicParams = QuicParams.toJSON(message.quicParams);
+    }
     if (message.socketSettings !== undefined) {
       obj.socketSettings = SocketConfig.toJSON(message.socketSettings);
     }
@@ -597,6 +641,9 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
     message.securitySettings = object.securitySettings?.map((e) => TypedMessage.fromPartial(e)) || [];
     message.udpmasks = object.udpmasks?.map((e) => TypedMessage.fromPartial(e)) || [];
     message.tcpmasks = object.tcpmasks?.map((e) => TypedMessage.fromPartial(e)) || [];
+    message.quicParams = (object.quicParams !== undefined && object.quicParams !== null)
+      ? QuicParams.fromPartial(object.quicParams)
+      : undefined;
     message.socketSettings = (object.socketSettings !== undefined && object.socketSettings !== null)
       ? SocketConfig.fromPartial(object.socketSettings)
       : undefined;
@@ -605,6 +652,424 @@ export const StreamConfig: MessageFns<StreamConfig, "xray.transport.internet.Str
 };
 
 messageTypeRegistry.set(StreamConfig.$type, StreamConfig);
+
+function createBaseUdpHop(): UdpHop {
+  return { $type: "xray.transport.internet.UdpHop", ports: [], intervalMin: 0, intervalMax: 0 };
+}
+
+export const UdpHop: MessageFns<UdpHop, "xray.transport.internet.UdpHop"> = {
+  $type: "xray.transport.internet.UdpHop" as const,
+
+  encode(message: UdpHop, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    writer.uint32(10).fork();
+    for (const v of message.ports) {
+      writer.uint32(v);
+    }
+    writer.join();
+    if (message.intervalMin !== 0) {
+      writer.uint32(16).int64(message.intervalMin);
+    }
+    if (message.intervalMax !== 0) {
+      writer.uint32(24).int64(message.intervalMax);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UdpHop {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUdpHop();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag === 8) {
+            message.ports.push(reader.uint32());
+
+            continue;
+          }
+
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.ports.push(reader.uint32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.intervalMin = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.intervalMax = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UdpHop {
+    return {
+      $type: UdpHop.$type,
+      ports: globalThis.Array.isArray(object?.ports) ? object.ports.map((e: any) => globalThis.Number(e)) : [],
+      intervalMin: isSet(object.intervalMin)
+        ? globalThis.Number(object.intervalMin)
+        : isSet(object.interval_min)
+        ? globalThis.Number(object.interval_min)
+        : 0,
+      intervalMax: isSet(object.intervalMax)
+        ? globalThis.Number(object.intervalMax)
+        : isSet(object.interval_max)
+        ? globalThis.Number(object.interval_max)
+        : 0,
+    };
+  },
+
+  toJSON(message: UdpHop): unknown {
+    const obj: any = {};
+    if (message.ports?.length) {
+      obj.ports = message.ports.map((e) => Math.round(e));
+    }
+    if (message.intervalMin !== 0) {
+      obj.intervalMin = Math.round(message.intervalMin);
+    }
+    if (message.intervalMax !== 0) {
+      obj.intervalMax = Math.round(message.intervalMax);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UdpHop>): UdpHop {
+    return UdpHop.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UdpHop>): UdpHop {
+    const message = createBaseUdpHop();
+    message.ports = object.ports?.map((e) => e) || [];
+    message.intervalMin = object.intervalMin ?? 0;
+    message.intervalMax = object.intervalMax ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(UdpHop.$type, UdpHop);
+
+function createBaseQuicParams(): QuicParams {
+  return {
+    $type: "xray.transport.internet.QuicParams",
+    congestion: "",
+    brutalUp: 0,
+    brutalDown: 0,
+    udpHop: undefined,
+    initStreamReceiveWindow: 0,
+    maxStreamReceiveWindow: 0,
+    initConnReceiveWindow: 0,
+    maxConnReceiveWindow: 0,
+    maxIdleTimeout: 0,
+    keepAlivePeriod: 0,
+    disablePathMtuDiscovery: false,
+    maxIncomingStreams: 0,
+  };
+}
+
+export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicParams"> = {
+  $type: "xray.transport.internet.QuicParams" as const,
+
+  encode(message: QuicParams, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.congestion !== "") {
+      writer.uint32(10).string(message.congestion);
+    }
+    if (message.brutalUp !== 0) {
+      writer.uint32(16).uint64(message.brutalUp);
+    }
+    if (message.brutalDown !== 0) {
+      writer.uint32(24).uint64(message.brutalDown);
+    }
+    if (message.udpHop !== undefined) {
+      UdpHop.encode(message.udpHop, writer.uint32(34).fork()).join();
+    }
+    if (message.initStreamReceiveWindow !== 0) {
+      writer.uint32(40).uint64(message.initStreamReceiveWindow);
+    }
+    if (message.maxStreamReceiveWindow !== 0) {
+      writer.uint32(48).uint64(message.maxStreamReceiveWindow);
+    }
+    if (message.initConnReceiveWindow !== 0) {
+      writer.uint32(56).uint64(message.initConnReceiveWindow);
+    }
+    if (message.maxConnReceiveWindow !== 0) {
+      writer.uint32(64).uint64(message.maxConnReceiveWindow);
+    }
+    if (message.maxIdleTimeout !== 0) {
+      writer.uint32(72).int64(message.maxIdleTimeout);
+    }
+    if (message.keepAlivePeriod !== 0) {
+      writer.uint32(80).int64(message.keepAlivePeriod);
+    }
+    if (message.disablePathMtuDiscovery !== false) {
+      writer.uint32(88).bool(message.disablePathMtuDiscovery);
+    }
+    if (message.maxIncomingStreams !== 0) {
+      writer.uint32(96).int64(message.maxIncomingStreams);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): QuicParams {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQuicParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.congestion = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.brutalUp = longToNumber(reader.uint64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.brutalDown = longToNumber(reader.uint64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.udpHop = UdpHop.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.initStreamReceiveWindow = longToNumber(reader.uint64());
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.maxStreamReceiveWindow = longToNumber(reader.uint64());
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.initConnReceiveWindow = longToNumber(reader.uint64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.maxConnReceiveWindow = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.maxIdleTimeout = longToNumber(reader.int64());
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.keepAlivePeriod = longToNumber(reader.int64());
+          continue;
+        }
+        case 11: {
+          if (tag !== 88) {
+            break;
+          }
+
+          message.disablePathMtuDiscovery = reader.bool();
+          continue;
+        }
+        case 12: {
+          if (tag !== 96) {
+            break;
+          }
+
+          message.maxIncomingStreams = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QuicParams {
+    return {
+      $type: QuicParams.$type,
+      congestion: isSet(object.congestion) ? globalThis.String(object.congestion) : "",
+      brutalUp: isSet(object.brutalUp)
+        ? globalThis.Number(object.brutalUp)
+        : isSet(object.brutal_up)
+        ? globalThis.Number(object.brutal_up)
+        : 0,
+      brutalDown: isSet(object.brutalDown)
+        ? globalThis.Number(object.brutalDown)
+        : isSet(object.brutal_down)
+        ? globalThis.Number(object.brutal_down)
+        : 0,
+      udpHop: isSet(object.udpHop)
+        ? UdpHop.fromJSON(object.udpHop)
+        : isSet(object.udp_hop)
+        ? UdpHop.fromJSON(object.udp_hop)
+        : undefined,
+      initStreamReceiveWindow: isSet(object.initStreamReceiveWindow)
+        ? globalThis.Number(object.initStreamReceiveWindow)
+        : isSet(object.init_stream_receive_window)
+        ? globalThis.Number(object.init_stream_receive_window)
+        : 0,
+      maxStreamReceiveWindow: isSet(object.maxStreamReceiveWindow)
+        ? globalThis.Number(object.maxStreamReceiveWindow)
+        : isSet(object.max_stream_receive_window)
+        ? globalThis.Number(object.max_stream_receive_window)
+        : 0,
+      initConnReceiveWindow: isSet(object.initConnReceiveWindow)
+        ? globalThis.Number(object.initConnReceiveWindow)
+        : isSet(object.init_conn_receive_window)
+        ? globalThis.Number(object.init_conn_receive_window)
+        : 0,
+      maxConnReceiveWindow: isSet(object.maxConnReceiveWindow)
+        ? globalThis.Number(object.maxConnReceiveWindow)
+        : isSet(object.max_conn_receive_window)
+        ? globalThis.Number(object.max_conn_receive_window)
+        : 0,
+      maxIdleTimeout: isSet(object.maxIdleTimeout)
+        ? globalThis.Number(object.maxIdleTimeout)
+        : isSet(object.max_idle_timeout)
+        ? globalThis.Number(object.max_idle_timeout)
+        : 0,
+      keepAlivePeriod: isSet(object.keepAlivePeriod)
+        ? globalThis.Number(object.keepAlivePeriod)
+        : isSet(object.keep_alive_period)
+        ? globalThis.Number(object.keep_alive_period)
+        : 0,
+      disablePathMtuDiscovery: isSet(object.disablePathMtuDiscovery)
+        ? globalThis.Boolean(object.disablePathMtuDiscovery)
+        : isSet(object.disable_path_mtu_discovery)
+        ? globalThis.Boolean(object.disable_path_mtu_discovery)
+        : false,
+      maxIncomingStreams: isSet(object.maxIncomingStreams)
+        ? globalThis.Number(object.maxIncomingStreams)
+        : isSet(object.max_incoming_streams)
+        ? globalThis.Number(object.max_incoming_streams)
+        : 0,
+    };
+  },
+
+  toJSON(message: QuicParams): unknown {
+    const obj: any = {};
+    if (message.congestion !== "") {
+      obj.congestion = message.congestion;
+    }
+    if (message.brutalUp !== 0) {
+      obj.brutalUp = Math.round(message.brutalUp);
+    }
+    if (message.brutalDown !== 0) {
+      obj.brutalDown = Math.round(message.brutalDown);
+    }
+    if (message.udpHop !== undefined) {
+      obj.udpHop = UdpHop.toJSON(message.udpHop);
+    }
+    if (message.initStreamReceiveWindow !== 0) {
+      obj.initStreamReceiveWindow = Math.round(message.initStreamReceiveWindow);
+    }
+    if (message.maxStreamReceiveWindow !== 0) {
+      obj.maxStreamReceiveWindow = Math.round(message.maxStreamReceiveWindow);
+    }
+    if (message.initConnReceiveWindow !== 0) {
+      obj.initConnReceiveWindow = Math.round(message.initConnReceiveWindow);
+    }
+    if (message.maxConnReceiveWindow !== 0) {
+      obj.maxConnReceiveWindow = Math.round(message.maxConnReceiveWindow);
+    }
+    if (message.maxIdleTimeout !== 0) {
+      obj.maxIdleTimeout = Math.round(message.maxIdleTimeout);
+    }
+    if (message.keepAlivePeriod !== 0) {
+      obj.keepAlivePeriod = Math.round(message.keepAlivePeriod);
+    }
+    if (message.disablePathMtuDiscovery !== false) {
+      obj.disablePathMtuDiscovery = message.disablePathMtuDiscovery;
+    }
+    if (message.maxIncomingStreams !== 0) {
+      obj.maxIncomingStreams = Math.round(message.maxIncomingStreams);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QuicParams>): QuicParams {
+    return QuicParams.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QuicParams>): QuicParams {
+    const message = createBaseQuicParams();
+    message.congestion = object.congestion ?? "";
+    message.brutalUp = object.brutalUp ?? 0;
+    message.brutalDown = object.brutalDown ?? 0;
+    message.udpHop = (object.udpHop !== undefined && object.udpHop !== null)
+      ? UdpHop.fromPartial(object.udpHop)
+      : undefined;
+    message.initStreamReceiveWindow = object.initStreamReceiveWindow ?? 0;
+    message.maxStreamReceiveWindow = object.maxStreamReceiveWindow ?? 0;
+    message.initConnReceiveWindow = object.initConnReceiveWindow ?? 0;
+    message.maxConnReceiveWindow = object.maxConnReceiveWindow ?? 0;
+    message.maxIdleTimeout = object.maxIdleTimeout ?? 0;
+    message.keepAlivePeriod = object.keepAlivePeriod ?? 0;
+    message.disablePathMtuDiscovery = object.disablePathMtuDiscovery ?? false;
+    message.maxIncomingStreams = object.maxIncomingStreams ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(QuicParams.$type, QuicParams);
 
 function createBaseProxyConfig(): ProxyConfig {
   return { $type: "xray.transport.internet.ProxyConfig", tag: "", transportLayerProxy: false };

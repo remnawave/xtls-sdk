@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { ServerEndpoint } from "../../common/protocol/server_spec";
+import { User } from "../../common/protocol/user";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.hysteria";
@@ -15,6 +16,11 @@ export interface ClientConfig {
   $type: "xray.proxy.hysteria.ClientConfig";
   version: number;
   server: ServerEndpoint | undefined;
+}
+
+export interface ServerConfig {
+  $type: "xray.proxy.hysteria.ServerConfig";
+  users: User[];
 }
 
 function createBaseClientConfig(): ClientConfig {
@@ -99,6 +105,71 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.hysteria.ClientC
 };
 
 messageTypeRegistry.set(ClientConfig.$type, ClientConfig);
+
+function createBaseServerConfig(): ServerConfig {
+  return { $type: "xray.proxy.hysteria.ServerConfig", users: [] };
+}
+
+export const ServerConfig: MessageFns<ServerConfig, "xray.proxy.hysteria.ServerConfig"> = {
+  $type: "xray.proxy.hysteria.ServerConfig" as const,
+
+  encode(message: ServerConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ServerConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseServerConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ServerConfig {
+    return {
+      $type: ServerConfig.$type,
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ServerConfig): unknown {
+    const obj: any = {};
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ServerConfig>): ServerConfig {
+    return ServerConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ServerConfig>): ServerConfig {
+    const message = createBaseServerConfig();
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+messageTypeRegistry.set(ServerConfig.$type, ServerConfig);
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

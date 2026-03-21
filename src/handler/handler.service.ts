@@ -1,13 +1,8 @@
 import { createClient, Channel } from 'nice-grpc';
 
 import {
-    AddUserOperation,
-    HandlerServiceClient,
-    HandlerServiceDefinition,
-    RemoveUserOperation,
-} from '../xray-protos/app/proxyman/command/command';
-import {
     IAddHttpUser,
+    IAddHysteriaUser,
     IAddShadowsocks2022User,
     IAddShadowsocksUser,
     IAddSocksUser,
@@ -15,12 +10,19 @@ import {
     IAddVlessUser,
 } from './interfaces';
 import {
+    AddUserOperation,
+    HandlerServiceClient,
+    HandlerServiceDefinition,
+    RemoveUserOperation,
+} from '../xray-protos/app/proxyman/command/command';
+import {
     AddUserResponseModel,
     GetInboundUsersResponseModel,
     RemoveUserResponseModel,
 } from './models';
 import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
 import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
+import { Account as HysteriaAccount } from '../xray-protos/proxy/hysteria/account/config';
 import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
 import { Account as TrojanAccount } from '../xray-protos/proxy/trojan/config';
 import { Account as VlessAccount } from '../xray-protos/proxy/vless/account';
@@ -344,6 +346,78 @@ export class HandlerService {
                         account: createTypedMessage(HttpAccount, {
                             username: data.http_username,
                             password: data.http_password,
+                        }),
+                    }),
+                }),
+            });
+
+            return {
+                isOk: true,
+                data: new AddUserResponseModel(true),
+            };
+        } catch (error) {
+            let message = '';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+
+            if (message.includes('already exists')) {
+                return {
+                    isOk: true,
+                    data: new AddUserResponseModel(false),
+                };
+            }
+
+            return {
+                isOk: false,
+                ...HANDLER_ERRORS.ADD_USER_ERROR(message),
+            };
+        }
+    }
+
+    /**
+     * Adds a new Hysteria user to a specified inbound handler.
+     *
+     * @remarks
+     * This method adds a user for the Hysteria protocol to an Xray server inbound handler.
+     *
+     * @param data - The user data for the new Hysteria user.
+     * @param data.tag - The tag identifying the inbound handler.
+     * @param data.username - The email/username for the user.
+     * @param data.level - The user privilege level.
+     * @param data.uuid - The authentication string for Hysteria (typically a password).
+     *
+     * @returns A promise that resolves to an {@link ISdkResponse} containing {@link AddUserResponseModel}.
+     *
+     * @example
+     * ```typescript
+     * const handler = new HandlerService(channel);
+     * const result = await handler.addHysteriaUser({
+     *   tag: 'hysteria-inbound',
+     *   username: 'example@example.com',
+     *   level: 0,
+     *   uuid: 'random-password',
+     * });
+     * if (result.isOk && result.data.success) {
+     *   // User added successfully
+     * }
+     * ```
+     *
+     * @throws An error with details from {@link HANDLER_ERRORS.ADD_USER_ERROR} if the operation fails.
+     * Returns `isOk: true` and `success: false` if the user already exists.
+     */
+    public async addHysteriaUser(
+        data: IAddHysteriaUser,
+    ): Promise<ISdkResponse<AddUserResponseModel>> {
+        try {
+            await this.client.alterInbound({
+                tag: data.tag,
+                operation: createTypedMessage(AddUserOperation, {
+                    user: User.create({
+                        email: data.username,
+                        level: data.level,
+                        account: createTypedMessage(HysteriaAccount, {
+                            auth: data.uuid,
                         }),
                     }),
                 }),

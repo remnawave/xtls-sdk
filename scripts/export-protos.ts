@@ -8,7 +8,13 @@ import * as tar from 'tar';
 
 const VERSION = '26.2.6';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
-const TARGET_URL = `https://github.com/XTLS/Xray-core/archive/refs/tags/v${VERSION}.tar.gz`;
+
+const SOURCE = process.argv[2] || 'tag';
+
+const TARGET_URL =
+    SOURCE === 'main'
+        ? 'https://github.com/XTLS/Xray-core/archive/refs/heads/main.tar.gz'
+        : `https://github.com/XTLS/Xray-core/archive/refs/tags/v${VERSION}.tar.gz`;
 
 const PROTO_DIR = path.join(__dirname, '../src/xray-protos');
 

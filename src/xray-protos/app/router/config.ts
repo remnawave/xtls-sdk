@@ -152,10 +152,24 @@ export interface RoutingRule {
   localPortList: PortList | undefined;
   vlessRouteList: PortList | undefined;
   process: string[];
+  webhook: WebhookConfig | undefined;
 }
 
 export interface RoutingRule_AttributesEntry {
   $type: "xray.app.router.RoutingRule.AttributesEntry";
+  key: string;
+  value: string;
+}
+
+export interface WebhookConfig {
+  $type: "xray.app.router.WebhookConfig";
+  url: string;
+  deduplication: number;
+  headers: { [key: string]: string };
+}
+
+export interface WebhookConfig_HeadersEntry {
+  $type: "xray.app.router.WebhookConfig.HeadersEntry";
   key: string;
   value: string;
 }
@@ -864,6 +878,7 @@ function createBaseRoutingRule(): RoutingRule {
     localPortList: undefined,
     vlessRouteList: undefined,
     process: [],
+    webhook: undefined,
   };
 }
 
@@ -927,6 +942,9 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     }
     for (const v of message.process) {
       writer.uint32(170).string(v!);
+    }
+    if (message.webhook !== undefined) {
+      WebhookConfig.encode(message.webhook, writer.uint32(178).fork()).join();
     }
     return writer;
   },
@@ -1087,6 +1105,14 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           message.process.push(reader.string());
           continue;
         }
+        case 22: {
+          if (tag !== 178) {
+            break;
+          }
+
+          message.webhook = WebhookConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1168,6 +1194,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       process: globalThis.Array.isArray(object?.process)
         ? object.process.map((e: any) => globalThis.String(e))
         : [],
+      webhook: isSet(object.webhook) ? WebhookConfig.fromJSON(object.webhook) : undefined,
     };
   },
 
@@ -1230,6 +1257,9 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     if (message.process?.length) {
       obj.process = message.process;
     }
+    if (message.webhook !== undefined) {
+      obj.webhook = WebhookConfig.toJSON(message.webhook);
+    }
     return obj;
   },
 
@@ -1271,6 +1301,9 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       ? PortList.fromPartial(object.vlessRouteList)
       : undefined;
     message.process = object.process?.map((e) => e) || [];
+    message.webhook = (object.webhook !== undefined && object.webhook !== null)
+      ? WebhookConfig.fromPartial(object.webhook)
+      : undefined;
     return message;
   },
 };
@@ -1360,6 +1393,215 @@ export const RoutingRule_AttributesEntry: MessageFns<
 };
 
 messageTypeRegistry.set(RoutingRule_AttributesEntry.$type, RoutingRule_AttributesEntry);
+
+function createBaseWebhookConfig(): WebhookConfig {
+  return { $type: "xray.app.router.WebhookConfig", url: "", deduplication: 0, headers: {} };
+}
+
+export const WebhookConfig: MessageFns<WebhookConfig, "xray.app.router.WebhookConfig"> = {
+  $type: "xray.app.router.WebhookConfig" as const,
+
+  encode(message: WebhookConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.url !== "") {
+      writer.uint32(10).string(message.url);
+    }
+    if (message.deduplication !== 0) {
+      writer.uint32(16).uint32(message.deduplication);
+    }
+    globalThis.Object.entries(message.headers).forEach(([key, value]: [string, string]) => {
+      WebhookConfig_HeadersEntry.encode(
+        { $type: "xray.app.router.WebhookConfig.HeadersEntry", key: key as any, value },
+        writer.uint32(26).fork(),
+      ).join();
+    });
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WebhookConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWebhookConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.url = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.deduplication = reader.uint32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          const entry3 = WebhookConfig_HeadersEntry.decode(reader, reader.uint32());
+          if (entry3.value !== undefined) {
+            message.headers[entry3.key] = entry3.value;
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WebhookConfig {
+    return {
+      $type: WebhookConfig.$type,
+      url: isSet(object.url) ? globalThis.String(object.url) : "",
+      deduplication: isSet(object.deduplication) ? globalThis.Number(object.deduplication) : 0,
+      headers: isObject(object.headers)
+        ? (globalThis.Object.entries(object.headers) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+    };
+  },
+
+  toJSON(message: WebhookConfig): unknown {
+    const obj: any = {};
+    if (message.url !== "") {
+      obj.url = message.url;
+    }
+    if (message.deduplication !== 0) {
+      obj.deduplication = Math.round(message.deduplication);
+    }
+    if (message.headers) {
+      const entries = globalThis.Object.entries(message.headers) as [string, string][];
+      if (entries.length > 0) {
+        obj.headers = {};
+        entries.forEach(([k, v]) => {
+          obj.headers[k] = v;
+        });
+      }
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<WebhookConfig>): WebhookConfig {
+    return WebhookConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<WebhookConfig>): WebhookConfig {
+    const message = createBaseWebhookConfig();
+    message.url = object.url ?? "";
+    message.deduplication = object.deduplication ?? 0;
+    message.headers = (globalThis.Object.entries(object.headers ?? {}) as [string, string][]).reduce(
+      (acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      },
+      {},
+    );
+    return message;
+  },
+};
+
+messageTypeRegistry.set(WebhookConfig.$type, WebhookConfig);
+
+function createBaseWebhookConfig_HeadersEntry(): WebhookConfig_HeadersEntry {
+  return { $type: "xray.app.router.WebhookConfig.HeadersEntry", key: "", value: "" };
+}
+
+export const WebhookConfig_HeadersEntry: MessageFns<
+  WebhookConfig_HeadersEntry,
+  "xray.app.router.WebhookConfig.HeadersEntry"
+> = {
+  $type: "xray.app.router.WebhookConfig.HeadersEntry" as const,
+
+  encode(message: WebhookConfig_HeadersEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): WebhookConfig_HeadersEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWebhookConfig_HeadersEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WebhookConfig_HeadersEntry {
+    return {
+      $type: WebhookConfig_HeadersEntry.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: WebhookConfig_HeadersEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<WebhookConfig_HeadersEntry>): WebhookConfig_HeadersEntry {
+    return WebhookConfig_HeadersEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<WebhookConfig_HeadersEntry>): WebhookConfig_HeadersEntry {
+    const message = createBaseWebhookConfig_HeadersEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+messageTypeRegistry.set(WebhookConfig_HeadersEntry.$type, WebhookConfig_HeadersEntry);
 
 function createBaseBalancingRule(): BalancingRule {
   return {

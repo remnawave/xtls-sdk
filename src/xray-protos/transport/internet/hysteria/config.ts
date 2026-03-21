@@ -14,19 +14,21 @@ export interface Config {
   $type: "xray.transport.internet.hysteria.Config";
   version: number;
   auth: string;
-  congestion: string;
-  up: number;
-  down: number;
-  ports: number[];
-  intervalMin: number;
-  intervalMax: number;
-  initStreamReceiveWindow: number;
-  maxStreamReceiveWindow: number;
-  initConnReceiveWindow: number;
-  maxConnReceiveWindow: number;
-  maxIdleTimeout: number;
-  keepAlivePeriod: number;
-  disablePathMtuDiscovery: boolean;
+  udpIdleTimeout: number;
+  masqType: string;
+  masqFile: string;
+  masqUrl: string;
+  masqUrlRewriteHost: boolean;
+  masqUrlInsecure: boolean;
+  masqString: string;
+  masqStringHeaders: { [key: string]: string };
+  masqStringStatusCode: number;
+}
+
+export interface Config_MasqStringHeadersEntry {
+  $type: "xray.transport.internet.hysteria.Config.MasqStringHeadersEntry";
+  key: string;
+  value: string;
 }
 
 function createBaseConfig(): Config {
@@ -34,19 +36,15 @@ function createBaseConfig(): Config {
     $type: "xray.transport.internet.hysteria.Config",
     version: 0,
     auth: "",
-    congestion: "",
-    up: 0,
-    down: 0,
-    ports: [],
-    intervalMin: 0,
-    intervalMax: 0,
-    initStreamReceiveWindow: 0,
-    maxStreamReceiveWindow: 0,
-    initConnReceiveWindow: 0,
-    maxConnReceiveWindow: 0,
-    maxIdleTimeout: 0,
-    keepAlivePeriod: 0,
-    disablePathMtuDiscovery: false,
+    udpIdleTimeout: 0,
+    masqType: "",
+    masqFile: "",
+    masqUrl: "",
+    masqUrlRewriteHost: false,
+    masqUrlInsecure: false,
+    masqString: "",
+    masqStringHeaders: {},
+    masqStringStatusCode: 0,
   };
 }
 
@@ -60,46 +58,36 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
     if (message.auth !== "") {
       writer.uint32(18).string(message.auth);
     }
-    if (message.congestion !== "") {
-      writer.uint32(26).string(message.congestion);
+    if (message.udpIdleTimeout !== 0) {
+      writer.uint32(24).int64(message.udpIdleTimeout);
     }
-    if (message.up !== 0) {
-      writer.uint32(32).uint64(message.up);
+    if (message.masqType !== "") {
+      writer.uint32(34).string(message.masqType);
     }
-    if (message.down !== 0) {
-      writer.uint32(40).uint64(message.down);
+    if (message.masqFile !== "") {
+      writer.uint32(42).string(message.masqFile);
     }
-    writer.uint32(50).fork();
-    for (const v of message.ports) {
-      writer.uint32(v);
+    if (message.masqUrl !== "") {
+      writer.uint32(50).string(message.masqUrl);
     }
-    writer.join();
-    if (message.intervalMin !== 0) {
-      writer.uint32(56).int64(message.intervalMin);
+    if (message.masqUrlRewriteHost !== false) {
+      writer.uint32(56).bool(message.masqUrlRewriteHost);
     }
-    if (message.intervalMax !== 0) {
-      writer.uint32(64).int64(message.intervalMax);
+    if (message.masqUrlInsecure !== false) {
+      writer.uint32(64).bool(message.masqUrlInsecure);
     }
-    if (message.initStreamReceiveWindow !== 0) {
-      writer.uint32(72).uint64(message.initStreamReceiveWindow);
+    if (message.masqString !== "") {
+      writer.uint32(74).string(message.masqString);
     }
-    if (message.maxStreamReceiveWindow !== 0) {
-      writer.uint32(80).uint64(message.maxStreamReceiveWindow);
-    }
-    if (message.initConnReceiveWindow !== 0) {
-      writer.uint32(88).uint64(message.initConnReceiveWindow);
-    }
-    if (message.maxConnReceiveWindow !== 0) {
-      writer.uint32(96).uint64(message.maxConnReceiveWindow);
-    }
-    if (message.maxIdleTimeout !== 0) {
-      writer.uint32(104).int64(message.maxIdleTimeout);
-    }
-    if (message.keepAlivePeriod !== 0) {
-      writer.uint32(112).int64(message.keepAlivePeriod);
-    }
-    if (message.disablePathMtuDiscovery !== false) {
-      writer.uint32(120).bool(message.disablePathMtuDiscovery);
+    globalThis.Object.entries(message.masqStringHeaders).forEach(([key, value]: [string, string]) => {
+      Config_MasqStringHeadersEntry.encode({
+        $type: "xray.transport.internet.hysteria.Config.MasqStringHeadersEntry",
+        key: key as any,
+        value,
+      }, writer.uint32(82).fork()).join();
+    });
+    if (message.masqStringStatusCode !== 0) {
+      writer.uint32(88).int32(message.masqStringStatusCode);
     }
     return writer;
   },
@@ -128,53 +116,43 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.congestion = reader.string();
+          message.udpIdleTimeout = longToNumber(reader.int64());
           continue;
         }
         case 4: {
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.up = longToNumber(reader.uint64());
+          message.masqType = reader.string();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
             break;
           }
 
-          message.down = longToNumber(reader.uint64());
+          message.masqFile = reader.string();
           continue;
         }
         case 6: {
-          if (tag === 48) {
-            message.ports.push(reader.uint32());
-
-            continue;
+          if (tag !== 50) {
+            break;
           }
 
-          if (tag === 50) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.ports.push(reader.uint32());
-            }
-
-            continue;
-          }
-
-          break;
+          message.masqUrl = reader.string();
+          continue;
         }
         case 7: {
           if (tag !== 56) {
             break;
           }
 
-          message.intervalMin = longToNumber(reader.int64());
+          message.masqUrlRewriteHost = reader.bool();
           continue;
         }
         case 8: {
@@ -182,23 +160,26 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
             break;
           }
 
-          message.intervalMax = longToNumber(reader.int64());
+          message.masqUrlInsecure = reader.bool();
           continue;
         }
         case 9: {
-          if (tag !== 72) {
+          if (tag !== 74) {
             break;
           }
 
-          message.initStreamReceiveWindow = longToNumber(reader.uint64());
+          message.masqString = reader.string();
           continue;
         }
         case 10: {
-          if (tag !== 80) {
+          if (tag !== 82) {
             break;
           }
 
-          message.maxStreamReceiveWindow = longToNumber(reader.uint64());
+          const entry10 = Config_MasqStringHeadersEntry.decode(reader, reader.uint32());
+          if (entry10.value !== undefined) {
+            message.masqStringHeaders[entry10.key] = entry10.value;
+          }
           continue;
         }
         case 11: {
@@ -206,39 +187,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
             break;
           }
 
-          message.initConnReceiveWindow = longToNumber(reader.uint64());
-          continue;
-        }
-        case 12: {
-          if (tag !== 96) {
-            break;
-          }
-
-          message.maxConnReceiveWindow = longToNumber(reader.uint64());
-          continue;
-        }
-        case 13: {
-          if (tag !== 104) {
-            break;
-          }
-
-          message.maxIdleTimeout = longToNumber(reader.int64());
-          continue;
-        }
-        case 14: {
-          if (tag !== 112) {
-            break;
-          }
-
-          message.keepAlivePeriod = longToNumber(reader.int64());
-          continue;
-        }
-        case 15: {
-          if (tag !== 120) {
-            break;
-          }
-
-          message.disablePathMtuDiscovery = reader.bool();
+          message.masqStringStatusCode = reader.int32();
           continue;
         }
       }
@@ -255,55 +204,63 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
       $type: Config.$type,
       version: isSet(object.version) ? globalThis.Number(object.version) : 0,
       auth: isSet(object.auth) ? globalThis.String(object.auth) : "",
-      congestion: isSet(object.congestion) ? globalThis.String(object.congestion) : "",
-      up: isSet(object.up) ? globalThis.Number(object.up) : 0,
-      down: isSet(object.down) ? globalThis.Number(object.down) : 0,
-      ports: globalThis.Array.isArray(object?.ports) ? object.ports.map((e: any) => globalThis.Number(e)) : [],
-      intervalMin: isSet(object.intervalMin)
-        ? globalThis.Number(object.intervalMin)
-        : isSet(object.interval_min)
-        ? globalThis.Number(object.interval_min)
+      udpIdleTimeout: isSet(object.udpIdleTimeout)
+        ? globalThis.Number(object.udpIdleTimeout)
+        : isSet(object.udp_idle_timeout)
+        ? globalThis.Number(object.udp_idle_timeout)
         : 0,
-      intervalMax: isSet(object.intervalMax)
-        ? globalThis.Number(object.intervalMax)
-        : isSet(object.interval_max)
-        ? globalThis.Number(object.interval_max)
-        : 0,
-      initStreamReceiveWindow: isSet(object.initStreamReceiveWindow)
-        ? globalThis.Number(object.initStreamReceiveWindow)
-        : isSet(object.init_stream_receive_window)
-        ? globalThis.Number(object.init_stream_receive_window)
-        : 0,
-      maxStreamReceiveWindow: isSet(object.maxStreamReceiveWindow)
-        ? globalThis.Number(object.maxStreamReceiveWindow)
-        : isSet(object.max_stream_receive_window)
-        ? globalThis.Number(object.max_stream_receive_window)
-        : 0,
-      initConnReceiveWindow: isSet(object.initConnReceiveWindow)
-        ? globalThis.Number(object.initConnReceiveWindow)
-        : isSet(object.init_conn_receive_window)
-        ? globalThis.Number(object.init_conn_receive_window)
-        : 0,
-      maxConnReceiveWindow: isSet(object.maxConnReceiveWindow)
-        ? globalThis.Number(object.maxConnReceiveWindow)
-        : isSet(object.max_conn_receive_window)
-        ? globalThis.Number(object.max_conn_receive_window)
-        : 0,
-      maxIdleTimeout: isSet(object.maxIdleTimeout)
-        ? globalThis.Number(object.maxIdleTimeout)
-        : isSet(object.max_idle_timeout)
-        ? globalThis.Number(object.max_idle_timeout)
-        : 0,
-      keepAlivePeriod: isSet(object.keepAlivePeriod)
-        ? globalThis.Number(object.keepAlivePeriod)
-        : isSet(object.keep_alive_period)
-        ? globalThis.Number(object.keep_alive_period)
-        : 0,
-      disablePathMtuDiscovery: isSet(object.disablePathMtuDiscovery)
-        ? globalThis.Boolean(object.disablePathMtuDiscovery)
-        : isSet(object.disable_path_mtu_discovery)
-        ? globalThis.Boolean(object.disable_path_mtu_discovery)
+      masqType: isSet(object.masqType)
+        ? globalThis.String(object.masqType)
+        : isSet(object.masq_type)
+        ? globalThis.String(object.masq_type)
+        : "",
+      masqFile: isSet(object.masqFile)
+        ? globalThis.String(object.masqFile)
+        : isSet(object.masq_file)
+        ? globalThis.String(object.masq_file)
+        : "",
+      masqUrl: isSet(object.masqUrl)
+        ? globalThis.String(object.masqUrl)
+        : isSet(object.masq_url)
+        ? globalThis.String(object.masq_url)
+        : "",
+      masqUrlRewriteHost: isSet(object.masqUrlRewriteHost)
+        ? globalThis.Boolean(object.masqUrlRewriteHost)
+        : isSet(object.masq_url_rewrite_host)
+        ? globalThis.Boolean(object.masq_url_rewrite_host)
         : false,
+      masqUrlInsecure: isSet(object.masqUrlInsecure)
+        ? globalThis.Boolean(object.masqUrlInsecure)
+        : isSet(object.masq_url_insecure)
+        ? globalThis.Boolean(object.masq_url_insecure)
+        : false,
+      masqString: isSet(object.masqString)
+        ? globalThis.String(object.masqString)
+        : isSet(object.masq_string)
+        ? globalThis.String(object.masq_string)
+        : "",
+      masqStringHeaders: isObject(object.masqStringHeaders)
+        ? (globalThis.Object.entries(object.masqStringHeaders) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : isObject(object.masq_string_headers)
+        ? (globalThis.Object.entries(object.masq_string_headers) as [string, any][]).reduce(
+          (acc: { [key: string]: string }, [key, value]: [string, any]) => {
+            acc[key] = globalThis.String(value);
+            return acc;
+          },
+          {},
+        )
+        : {},
+      masqStringStatusCode: isSet(object.masqStringStatusCode)
+        ? globalThis.Number(object.masqStringStatusCode)
+        : isSet(object.masq_string_status_code)
+        ? globalThis.Number(object.masq_string_status_code)
+        : 0,
     };
   },
 
@@ -315,44 +272,38 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
     if (message.auth !== "") {
       obj.auth = message.auth;
     }
-    if (message.congestion !== "") {
-      obj.congestion = message.congestion;
+    if (message.udpIdleTimeout !== 0) {
+      obj.udpIdleTimeout = Math.round(message.udpIdleTimeout);
     }
-    if (message.up !== 0) {
-      obj.up = Math.round(message.up);
+    if (message.masqType !== "") {
+      obj.masqType = message.masqType;
     }
-    if (message.down !== 0) {
-      obj.down = Math.round(message.down);
+    if (message.masqFile !== "") {
+      obj.masqFile = message.masqFile;
     }
-    if (message.ports?.length) {
-      obj.ports = message.ports.map((e) => Math.round(e));
+    if (message.masqUrl !== "") {
+      obj.masqUrl = message.masqUrl;
     }
-    if (message.intervalMin !== 0) {
-      obj.intervalMin = Math.round(message.intervalMin);
+    if (message.masqUrlRewriteHost !== false) {
+      obj.masqUrlRewriteHost = message.masqUrlRewriteHost;
     }
-    if (message.intervalMax !== 0) {
-      obj.intervalMax = Math.round(message.intervalMax);
+    if (message.masqUrlInsecure !== false) {
+      obj.masqUrlInsecure = message.masqUrlInsecure;
     }
-    if (message.initStreamReceiveWindow !== 0) {
-      obj.initStreamReceiveWindow = Math.round(message.initStreamReceiveWindow);
+    if (message.masqString !== "") {
+      obj.masqString = message.masqString;
     }
-    if (message.maxStreamReceiveWindow !== 0) {
-      obj.maxStreamReceiveWindow = Math.round(message.maxStreamReceiveWindow);
+    if (message.masqStringHeaders) {
+      const entries = globalThis.Object.entries(message.masqStringHeaders) as [string, string][];
+      if (entries.length > 0) {
+        obj.masqStringHeaders = {};
+        entries.forEach(([k, v]) => {
+          obj.masqStringHeaders[k] = v;
+        });
+      }
     }
-    if (message.initConnReceiveWindow !== 0) {
-      obj.initConnReceiveWindow = Math.round(message.initConnReceiveWindow);
-    }
-    if (message.maxConnReceiveWindow !== 0) {
-      obj.maxConnReceiveWindow = Math.round(message.maxConnReceiveWindow);
-    }
-    if (message.maxIdleTimeout !== 0) {
-      obj.maxIdleTimeout = Math.round(message.maxIdleTimeout);
-    }
-    if (message.keepAlivePeriod !== 0) {
-      obj.keepAlivePeriod = Math.round(message.keepAlivePeriod);
-    }
-    if (message.disablePathMtuDiscovery !== false) {
-      obj.disablePathMtuDiscovery = message.disablePathMtuDiscovery;
+    if (message.masqStringStatusCode !== 0) {
+      obj.masqStringStatusCode = Math.round(message.masqStringStatusCode);
     }
     return obj;
   },
@@ -364,24 +315,110 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
     const message = createBaseConfig();
     message.version = object.version ?? 0;
     message.auth = object.auth ?? "";
-    message.congestion = object.congestion ?? "";
-    message.up = object.up ?? 0;
-    message.down = object.down ?? 0;
-    message.ports = object.ports?.map((e) => e) || [];
-    message.intervalMin = object.intervalMin ?? 0;
-    message.intervalMax = object.intervalMax ?? 0;
-    message.initStreamReceiveWindow = object.initStreamReceiveWindow ?? 0;
-    message.maxStreamReceiveWindow = object.maxStreamReceiveWindow ?? 0;
-    message.initConnReceiveWindow = object.initConnReceiveWindow ?? 0;
-    message.maxConnReceiveWindow = object.maxConnReceiveWindow ?? 0;
-    message.maxIdleTimeout = object.maxIdleTimeout ?? 0;
-    message.keepAlivePeriod = object.keepAlivePeriod ?? 0;
-    message.disablePathMtuDiscovery = object.disablePathMtuDiscovery ?? false;
+    message.udpIdleTimeout = object.udpIdleTimeout ?? 0;
+    message.masqType = object.masqType ?? "";
+    message.masqFile = object.masqFile ?? "";
+    message.masqUrl = object.masqUrl ?? "";
+    message.masqUrlRewriteHost = object.masqUrlRewriteHost ?? false;
+    message.masqUrlInsecure = object.masqUrlInsecure ?? false;
+    message.masqString = object.masqString ?? "";
+    message.masqStringHeaders = (globalThis.Object.entries(object.masqStringHeaders ?? {}) as [string, string][])
+      .reduce((acc: { [key: string]: string }, [key, value]: [string, string]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.String(value);
+        }
+        return acc;
+      }, {});
+    message.masqStringStatusCode = object.masqStringStatusCode ?? 0;
     return message;
   },
 };
 
 messageTypeRegistry.set(Config.$type, Config);
+
+function createBaseConfig_MasqStringHeadersEntry(): Config_MasqStringHeadersEntry {
+  return { $type: "xray.transport.internet.hysteria.Config.MasqStringHeadersEntry", key: "", value: "" };
+}
+
+export const Config_MasqStringHeadersEntry: MessageFns<
+  Config_MasqStringHeadersEntry,
+  "xray.transport.internet.hysteria.Config.MasqStringHeadersEntry"
+> = {
+  $type: "xray.transport.internet.hysteria.Config.MasqStringHeadersEntry" as const,
+
+  encode(message: Config_MasqStringHeadersEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Config_MasqStringHeadersEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseConfig_MasqStringHeadersEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Config_MasqStringHeadersEntry {
+    return {
+      $type: Config_MasqStringHeadersEntry.$type,
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+    };
+  },
+
+  toJSON(message: Config_MasqStringHeadersEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Config_MasqStringHeadersEntry>): Config_MasqStringHeadersEntry {
+    return Config_MasqStringHeadersEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Config_MasqStringHeadersEntry>): Config_MasqStringHeadersEntry {
+    const message = createBaseConfig_MasqStringHeadersEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? "";
+    return message;
+  },
+};
+
+messageTypeRegistry.set(Config_MasqStringHeadersEntry.$type, Config_MasqStringHeadersEntry);
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
@@ -400,6 +437,10 @@ function longToNumber(int64: { toString(): string }): number {
     throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
   }
   return num;
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {

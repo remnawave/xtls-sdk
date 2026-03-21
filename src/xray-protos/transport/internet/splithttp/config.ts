@@ -54,7 +54,8 @@ export interface Config {
   seqKey: string;
   uplinkDataPlacement: string;
   uplinkDataKey: string;
-  uplinkChunkSize: number;
+  uplinkChunkSize: RangeConfig | undefined;
+  serverMaxHeaderBytes: number;
 }
 
 export interface Config_HeadersEntry {
@@ -335,7 +336,8 @@ function createBaseConfig(): Config {
     seqKey: "",
     uplinkDataPlacement: "",
     uplinkDataKey: "",
-    uplinkChunkSize: 0,
+    uplinkChunkSize: undefined,
+    serverMaxHeaderBytes: 0,
   };
 }
 
@@ -422,8 +424,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.uplinkDataKey !== "") {
       writer.uint32(202).string(message.uplinkDataKey);
     }
-    if (message.uplinkChunkSize !== 0) {
-      writer.uint32(208).uint32(message.uplinkChunkSize);
+    if (message.uplinkChunkSize !== undefined) {
+      RangeConfig.encode(message.uplinkChunkSize, writer.uint32(210).fork()).join();
+    }
+    if (message.serverMaxHeaderBytes !== 0) {
+      writer.uint32(216).int32(message.serverMaxHeaderBytes);
     }
     return writer;
   },
@@ -639,11 +644,19 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
           continue;
         }
         case 26: {
-          if (tag !== 208) {
+          if (tag !== 210) {
             break;
           }
 
-          message.uplinkChunkSize = reader.uint32();
+          message.uplinkChunkSize = RangeConfig.decode(reader, reader.uint32());
+          continue;
+        }
+        case 27: {
+          if (tag !== 216) {
+            break;
+          }
+
+          message.serverMaxHeaderBytes = reader.int32();
           continue;
         }
       }
@@ -697,7 +710,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
       seqKey: isSet(object.seqKey) ? globalThis.String(object.seqKey) : "",
       uplinkDataPlacement: isSet(object.uplinkDataPlacement) ? globalThis.String(object.uplinkDataPlacement) : "",
       uplinkDataKey: isSet(object.uplinkDataKey) ? globalThis.String(object.uplinkDataKey) : "",
-      uplinkChunkSize: isSet(object.uplinkChunkSize) ? globalThis.Number(object.uplinkChunkSize) : 0,
+      uplinkChunkSize: isSet(object.uplinkChunkSize) ? RangeConfig.fromJSON(object.uplinkChunkSize) : undefined,
+      serverMaxHeaderBytes: isSet(object.serverMaxHeaderBytes) ? globalThis.Number(object.serverMaxHeaderBytes) : 0,
     };
   },
 
@@ -784,8 +798,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.uplinkDataKey !== "") {
       obj.uplinkDataKey = message.uplinkDataKey;
     }
-    if (message.uplinkChunkSize !== 0) {
-      obj.uplinkChunkSize = Math.round(message.uplinkChunkSize);
+    if (message.uplinkChunkSize !== undefined) {
+      obj.uplinkChunkSize = RangeConfig.toJSON(message.uplinkChunkSize);
+    }
+    if (message.serverMaxHeaderBytes !== 0) {
+      obj.serverMaxHeaderBytes = Math.round(message.serverMaxHeaderBytes);
     }
     return obj;
   },
@@ -840,7 +857,10 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     message.seqKey = object.seqKey ?? "";
     message.uplinkDataPlacement = object.uplinkDataPlacement ?? "";
     message.uplinkDataKey = object.uplinkDataKey ?? "";
-    message.uplinkChunkSize = object.uplinkChunkSize ?? 0;
+    message.uplinkChunkSize = (object.uplinkChunkSize !== undefined && object.uplinkChunkSize !== null)
+      ? RangeConfig.fromPartial(object.uplinkChunkSize)
+      : undefined;
+    message.serverMaxHeaderBytes = object.serverMaxHeaderBytes ?? 0;
     return message;
   },
 };
