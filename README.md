@@ -41,7 +41,9 @@ pnpm add @remnawave/xtls-sdk
 import { XtlsApi } from '@remnawave/xtls-sdk';
 
 // Initialize the API client
-const api = new XtlsApi('127.0.0.1', '10085');
+const api = new XtlsApi({
+  connectionUrl: '127.0.0.1:10085',
+});
 
 // Example: Get system statistics
 const stats = await api.stats.getSysStats();
