@@ -14,7 +14,7 @@ export interface UserStat {
     /**
      * User identifier. Maps to the `email` field from Xray core.
      */
-    id: string;
+    userId: string;
     ips: UserIPEntry[];
     traffic?: UserTrafficStat;
 }
@@ -64,7 +64,7 @@ export class GetUsersStatsResponseModel {
         const users: UserStat[] = [];
         for (const user of data.users) {
             const userStat = {
-                id: user.email,
+                userId: user.email,
                 ips: user.ips.map((ip) => ({ ip: ip.ip, lastSeen: new Date(ip.lastSeen * 1000) })),
                 traffic: user.traffic
                     ? { uplink: user.traffic.uplink, downlink: user.traffic.downlink }

@@ -548,7 +548,7 @@ export class StatsService {
                         // Per-user failure is non-fatal: fall through with empty ips.
                     }
 
-                    results[index] = { id: email, ips, traffic: undefined };
+                    results[index] = { userId: email, ips, traffic: undefined };
                 }
             };
 
