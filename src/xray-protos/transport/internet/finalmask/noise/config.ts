@@ -14,6 +14,8 @@ export interface Item {
   $type: "xray.transport.internet.finalmask.noise.Item";
   randMin: number;
   randMax: number;
+  randRangeMin: number;
+  randRangeMax: number;
   packet: Uint8Array;
   delayMin: number;
   delayMax: number;
@@ -31,6 +33,8 @@ function createBaseItem(): Item {
     $type: "xray.transport.internet.finalmask.noise.Item",
     randMin: 0,
     randMax: 0,
+    randRangeMin: 0,
+    randRangeMax: 0,
     packet: new Uint8Array(0),
     delayMin: 0,
     delayMax: 0,
@@ -47,14 +51,20 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
     if (message.randMax !== 0) {
       writer.uint32(16).int64(message.randMax);
     }
+    if (message.randRangeMin !== 0) {
+      writer.uint32(24).int32(message.randRangeMin);
+    }
+    if (message.randRangeMax !== 0) {
+      writer.uint32(32).int32(message.randRangeMax);
+    }
     if (message.packet.length !== 0) {
-      writer.uint32(26).bytes(message.packet);
+      writer.uint32(42).bytes(message.packet);
     }
     if (message.delayMin !== 0) {
-      writer.uint32(32).int64(message.delayMin);
+      writer.uint32(48).int64(message.delayMin);
     }
     if (message.delayMax !== 0) {
-      writer.uint32(40).int64(message.delayMax);
+      writer.uint32(56).int64(message.delayMax);
     }
     return writer;
   },
@@ -83,11 +93,11 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
           continue;
         }
         case 3: {
-          if (tag !== 26) {
+          if (tag !== 24) {
             break;
           }
 
-          message.packet = reader.bytes();
+          message.randRangeMin = reader.int32();
           continue;
         }
         case 4: {
@@ -95,11 +105,27 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
             break;
           }
 
-          message.delayMin = longToNumber(reader.int64());
+          message.randRangeMax = reader.int32();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.packet = reader.bytes();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.delayMin = longToNumber(reader.int64());
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
             break;
           }
 
@@ -128,6 +154,16 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
         : isSet(object.rand_max)
         ? globalThis.Number(object.rand_max)
         : 0,
+      randRangeMin: isSet(object.randRangeMin)
+        ? globalThis.Number(object.randRangeMin)
+        : isSet(object.rand_range_min)
+        ? globalThis.Number(object.rand_range_min)
+        : 0,
+      randRangeMax: isSet(object.randRangeMax)
+        ? globalThis.Number(object.randRangeMax)
+        : isSet(object.rand_range_max)
+        ? globalThis.Number(object.rand_range_max)
+        : 0,
       packet: isSet(object.packet) ? bytesFromBase64(object.packet) : new Uint8Array(0),
       delayMin: isSet(object.delayMin)
         ? globalThis.Number(object.delayMin)
@@ -150,6 +186,12 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
     if (message.randMax !== 0) {
       obj.randMax = Math.round(message.randMax);
     }
+    if (message.randRangeMin !== 0) {
+      obj.randRangeMin = Math.round(message.randRangeMin);
+    }
+    if (message.randRangeMax !== 0) {
+      obj.randRangeMax = Math.round(message.randRangeMax);
+    }
     if (message.packet.length !== 0) {
       obj.packet = base64FromBytes(message.packet);
     }
@@ -169,6 +211,8 @@ export const Item: MessageFns<Item, "xray.transport.internet.finalmask.noise.Ite
     const message = createBaseItem();
     message.randMin = object.randMin ?? 0;
     message.randMax = object.randMax ?? 0;
+    message.randRangeMin = object.randRangeMin ?? 0;
+    message.randRangeMax = object.randRangeMax ?? 0;
     message.packet = object.packet ?? new Uint8Array(0);
     message.delayMin = object.delayMin ?? 0;
     message.delayMax = object.delayMax ?? 0;

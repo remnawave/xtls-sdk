@@ -80,6 +80,36 @@ export interface GetAllOnlineUsersResponse {
   users: string[];
 }
 
+export interface OnlineIPEntry {
+  $type: "xray.app.stats.command.OnlineIPEntry";
+  ip: string;
+  lastSeen: number;
+}
+
+export interface TrafficUserStat {
+  $type: "xray.app.stats.command.TrafficUserStat";
+  uplink: number;
+  downlink: number;
+}
+
+export interface UserStat {
+  $type: "xray.app.stats.command.UserStat";
+  email: string;
+  ips: OnlineIPEntry[];
+  traffic: TrafficUserStat | undefined;
+}
+
+export interface GetUsersStatsRequest {
+  $type: "xray.app.stats.command.GetUsersStatsRequest";
+  includeTraffic: boolean;
+  reset: boolean;
+}
+
+export interface GetUsersStatsResponse {
+  $type: "xray.app.stats.command.GetUsersStatsResponse";
+  users: UserStat[];
+}
+
 export interface Config {
   $type: "xray.app.stats.command.Config";
 }
@@ -1037,6 +1067,422 @@ export const GetAllOnlineUsersResponse: MessageFns<
 
 messageTypeRegistry.set(GetAllOnlineUsersResponse.$type, GetAllOnlineUsersResponse);
 
+function createBaseOnlineIPEntry(): OnlineIPEntry {
+  return { $type: "xray.app.stats.command.OnlineIPEntry", ip: "", lastSeen: 0 };
+}
+
+export const OnlineIPEntry: MessageFns<OnlineIPEntry, "xray.app.stats.command.OnlineIPEntry"> = {
+  $type: "xray.app.stats.command.OnlineIPEntry" as const,
+
+  encode(message: OnlineIPEntry, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.ip !== "") {
+      writer.uint32(10).string(message.ip);
+    }
+    if (message.lastSeen !== 0) {
+      writer.uint32(16).int64(message.lastSeen);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): OnlineIPEntry {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseOnlineIPEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.ip = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.lastSeen = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): OnlineIPEntry {
+    return {
+      $type: OnlineIPEntry.$type,
+      ip: isSet(object.ip) ? globalThis.String(object.ip) : "",
+      lastSeen: isSet(object.lastSeen)
+        ? globalThis.Number(object.lastSeen)
+        : isSet(object.last_seen)
+        ? globalThis.Number(object.last_seen)
+        : 0,
+    };
+  },
+
+  toJSON(message: OnlineIPEntry): unknown {
+    const obj: any = {};
+    if (message.ip !== "") {
+      obj.ip = message.ip;
+    }
+    if (message.lastSeen !== 0) {
+      obj.lastSeen = Math.round(message.lastSeen);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<OnlineIPEntry>): OnlineIPEntry {
+    return OnlineIPEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<OnlineIPEntry>): OnlineIPEntry {
+    const message = createBaseOnlineIPEntry();
+    message.ip = object.ip ?? "";
+    message.lastSeen = object.lastSeen ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(OnlineIPEntry.$type, OnlineIPEntry);
+
+function createBaseTrafficUserStat(): TrafficUserStat {
+  return { $type: "xray.app.stats.command.TrafficUserStat", uplink: 0, downlink: 0 };
+}
+
+export const TrafficUserStat: MessageFns<TrafficUserStat, "xray.app.stats.command.TrafficUserStat"> = {
+  $type: "xray.app.stats.command.TrafficUserStat" as const,
+
+  encode(message: TrafficUserStat, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.uplink !== 0) {
+      writer.uint32(8).int64(message.uplink);
+    }
+    if (message.downlink !== 0) {
+      writer.uint32(16).int64(message.downlink);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TrafficUserStat {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTrafficUserStat();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.uplink = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.downlink = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TrafficUserStat {
+    return {
+      $type: TrafficUserStat.$type,
+      uplink: isSet(object.uplink) ? globalThis.Number(object.uplink) : 0,
+      downlink: isSet(object.downlink) ? globalThis.Number(object.downlink) : 0,
+    };
+  },
+
+  toJSON(message: TrafficUserStat): unknown {
+    const obj: any = {};
+    if (message.uplink !== 0) {
+      obj.uplink = Math.round(message.uplink);
+    }
+    if (message.downlink !== 0) {
+      obj.downlink = Math.round(message.downlink);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TrafficUserStat>): TrafficUserStat {
+    return TrafficUserStat.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TrafficUserStat>): TrafficUserStat {
+    const message = createBaseTrafficUserStat();
+    message.uplink = object.uplink ?? 0;
+    message.downlink = object.downlink ?? 0;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(TrafficUserStat.$type, TrafficUserStat);
+
+function createBaseUserStat(): UserStat {
+  return { $type: "xray.app.stats.command.UserStat", email: "", ips: [], traffic: undefined };
+}
+
+export const UserStat: MessageFns<UserStat, "xray.app.stats.command.UserStat"> = {
+  $type: "xray.app.stats.command.UserStat" as const,
+
+  encode(message: UserStat, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    for (const v of message.ips) {
+      OnlineIPEntry.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.traffic !== undefined) {
+      TrafficUserStat.encode(message.traffic, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UserStat {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserStat();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.ips.push(OnlineIPEntry.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.traffic = TrafficUserStat.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserStat {
+    return {
+      $type: UserStat.$type,
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      ips: globalThis.Array.isArray(object?.ips) ? object.ips.map((e: any) => OnlineIPEntry.fromJSON(e)) : [],
+      traffic: isSet(object.traffic) ? TrafficUserStat.fromJSON(object.traffic) : undefined,
+    };
+  },
+
+  toJSON(message: UserStat): unknown {
+    const obj: any = {};
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.ips?.length) {
+      obj.ips = message.ips.map((e) => OnlineIPEntry.toJSON(e));
+    }
+    if (message.traffic !== undefined) {
+      obj.traffic = TrafficUserStat.toJSON(message.traffic);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UserStat>): UserStat {
+    return UserStat.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UserStat>): UserStat {
+    const message = createBaseUserStat();
+    message.email = object.email ?? "";
+    message.ips = object.ips?.map((e) => OnlineIPEntry.fromPartial(e)) || [];
+    message.traffic = (object.traffic !== undefined && object.traffic !== null)
+      ? TrafficUserStat.fromPartial(object.traffic)
+      : undefined;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(UserStat.$type, UserStat);
+
+function createBaseGetUsersStatsRequest(): GetUsersStatsRequest {
+  return { $type: "xray.app.stats.command.GetUsersStatsRequest", includeTraffic: false, reset: false };
+}
+
+export const GetUsersStatsRequest: MessageFns<GetUsersStatsRequest, "xray.app.stats.command.GetUsersStatsRequest"> = {
+  $type: "xray.app.stats.command.GetUsersStatsRequest" as const,
+
+  encode(message: GetUsersStatsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.includeTraffic !== false) {
+      writer.uint32(8).bool(message.includeTraffic);
+    }
+    if (message.reset !== false) {
+      writer.uint32(16).bool(message.reset);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUsersStatsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUsersStatsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.includeTraffic = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.reset = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUsersStatsRequest {
+    return {
+      $type: GetUsersStatsRequest.$type,
+      includeTraffic: isSet(object.includeTraffic)
+        ? globalThis.Boolean(object.includeTraffic)
+        : isSet(object.include_traffic)
+        ? globalThis.Boolean(object.include_traffic)
+        : false,
+      reset: isSet(object.reset) ? globalThis.Boolean(object.reset) : false,
+    };
+  },
+
+  toJSON(message: GetUsersStatsRequest): unknown {
+    const obj: any = {};
+    if (message.includeTraffic !== false) {
+      obj.includeTraffic = message.includeTraffic;
+    }
+    if (message.reset !== false) {
+      obj.reset = message.reset;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetUsersStatsRequest>): GetUsersStatsRequest {
+    return GetUsersStatsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetUsersStatsRequest>): GetUsersStatsRequest {
+    const message = createBaseGetUsersStatsRequest();
+    message.includeTraffic = object.includeTraffic ?? false;
+    message.reset = object.reset ?? false;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(GetUsersStatsRequest.$type, GetUsersStatsRequest);
+
+function createBaseGetUsersStatsResponse(): GetUsersStatsResponse {
+  return { $type: "xray.app.stats.command.GetUsersStatsResponse", users: [] };
+}
+
+export const GetUsersStatsResponse: MessageFns<GetUsersStatsResponse, "xray.app.stats.command.GetUsersStatsResponse"> =
+  {
+    $type: "xray.app.stats.command.GetUsersStatsResponse" as const,
+
+    encode(message: GetUsersStatsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+      for (const v of message.users) {
+        UserStat.encode(v!, writer.uint32(10).fork()).join();
+      }
+      return writer;
+    },
+
+    decode(input: BinaryReader | Uint8Array, length?: number): GetUsersStatsResponse {
+      const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseGetUsersStatsResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.users.push(UserStat.decode(reader, reader.uint32()));
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): GetUsersStatsResponse {
+      return {
+        $type: GetUsersStatsResponse.$type,
+        users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => UserStat.fromJSON(e)) : [],
+      };
+    },
+
+    toJSON(message: GetUsersStatsResponse): unknown {
+      const obj: any = {};
+      if (message.users?.length) {
+        obj.users = message.users.map((e) => UserStat.toJSON(e));
+      }
+      return obj;
+    },
+
+    create(base?: DeepPartial<GetUsersStatsResponse>): GetUsersStatsResponse {
+      return GetUsersStatsResponse.fromPartial(base ?? {});
+    },
+    fromPartial(object: DeepPartial<GetUsersStatsResponse>): GetUsersStatsResponse {
+      const message = createBaseGetUsersStatsResponse();
+      message.users = object.users?.map((e) => UserStat.fromPartial(e)) || [];
+      return message;
+    },
+  };
+
+messageTypeRegistry.set(GetUsersStatsResponse.$type, GetUsersStatsResponse);
+
 function createBaseConfig(): Config {
   return { $type: "xray.app.stats.command.Config" };
 }
@@ -1137,6 +1583,14 @@ export const StatsServiceDefinition = {
       responseStream: false,
       options: {},
     },
+    getUsersStats: {
+      name: "GetUsersStats",
+      requestType: GetUsersStatsRequest,
+      requestStream: false,
+      responseType: GetUsersStatsResponse,
+      responseStream: false,
+      options: {},
+    },
   },
 } as const;
 
@@ -1159,6 +1613,10 @@ export interface StatsServiceImplementation<CallContextExt = {}> {
     request: GetAllOnlineUsersRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<GetAllOnlineUsersResponse>>;
+  getUsersStats(
+    request: GetUsersStatsRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetUsersStatsResponse>>;
 }
 
 export interface StatsServiceClient<CallOptionsExt = {}> {
@@ -1180,6 +1638,10 @@ export interface StatsServiceClient<CallOptionsExt = {}> {
     request: DeepPartial<GetAllOnlineUsersRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<GetAllOnlineUsersResponse>;
+  getUsersStats(
+    request: DeepPartial<GetUsersStatsRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetUsersStatsResponse>;
 }
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;

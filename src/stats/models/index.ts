@@ -6,3 +6,4 @@ export * from './get-all-inbounds-stats';
 export * from './get-inbound-stats';
 export * from './get-all-outbounds-stats';
 export * from './get-outbound-stats';
+export * from './get-users-stats';

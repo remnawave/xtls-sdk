@@ -197,6 +197,7 @@ export interface UdpHop {
 export interface QuicParams {
   $type: "xray.transport.internet.QuicParams";
   congestion: string;
+  bbrProfile: string;
   brutalUp: number;
   brutalDown: number;
   udpHop: UdpHop | undefined;
@@ -774,6 +775,7 @@ function createBaseQuicParams(): QuicParams {
   return {
     $type: "xray.transport.internet.QuicParams",
     congestion: "",
+    bbrProfile: "",
     brutalUp: 0,
     brutalDown: 0,
     udpHop: undefined,
@@ -795,38 +797,41 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
     if (message.congestion !== "") {
       writer.uint32(10).string(message.congestion);
     }
+    if (message.bbrProfile !== "") {
+      writer.uint32(18).string(message.bbrProfile);
+    }
     if (message.brutalUp !== 0) {
-      writer.uint32(16).uint64(message.brutalUp);
+      writer.uint32(24).uint64(message.brutalUp);
     }
     if (message.brutalDown !== 0) {
-      writer.uint32(24).uint64(message.brutalDown);
+      writer.uint32(32).uint64(message.brutalDown);
     }
     if (message.udpHop !== undefined) {
-      UdpHop.encode(message.udpHop, writer.uint32(34).fork()).join();
+      UdpHop.encode(message.udpHop, writer.uint32(42).fork()).join();
     }
     if (message.initStreamReceiveWindow !== 0) {
-      writer.uint32(40).uint64(message.initStreamReceiveWindow);
+      writer.uint32(48).uint64(message.initStreamReceiveWindow);
     }
     if (message.maxStreamReceiveWindow !== 0) {
-      writer.uint32(48).uint64(message.maxStreamReceiveWindow);
+      writer.uint32(56).uint64(message.maxStreamReceiveWindow);
     }
     if (message.initConnReceiveWindow !== 0) {
-      writer.uint32(56).uint64(message.initConnReceiveWindow);
+      writer.uint32(64).uint64(message.initConnReceiveWindow);
     }
     if (message.maxConnReceiveWindow !== 0) {
-      writer.uint32(64).uint64(message.maxConnReceiveWindow);
+      writer.uint32(72).uint64(message.maxConnReceiveWindow);
     }
     if (message.maxIdleTimeout !== 0) {
-      writer.uint32(72).int64(message.maxIdleTimeout);
+      writer.uint32(80).int64(message.maxIdleTimeout);
     }
     if (message.keepAlivePeriod !== 0) {
-      writer.uint32(80).int64(message.keepAlivePeriod);
+      writer.uint32(88).int64(message.keepAlivePeriod);
     }
     if (message.disablePathMtuDiscovery !== false) {
-      writer.uint32(88).bool(message.disablePathMtuDiscovery);
+      writer.uint32(96).bool(message.disablePathMtuDiscovery);
     }
     if (message.maxIncomingStreams !== 0) {
-      writer.uint32(96).int64(message.maxIncomingStreams);
+      writer.uint32(104).int64(message.maxIncomingStreams);
     }
     return writer;
   },
@@ -847,11 +852,11 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
           continue;
         }
         case 2: {
-          if (tag !== 16) {
+          if (tag !== 18) {
             break;
           }
 
-          message.brutalUp = longToNumber(reader.uint64());
+          message.bbrProfile = reader.string();
           continue;
         }
         case 3: {
@@ -859,23 +864,23 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.brutalDown = longToNumber(reader.uint64());
+          message.brutalUp = longToNumber(reader.uint64());
           continue;
         }
         case 4: {
-          if (tag !== 34) {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.brutalDown = longToNumber(reader.uint64());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
             break;
           }
 
           message.udpHop = UdpHop.decode(reader, reader.uint32());
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.initStreamReceiveWindow = longToNumber(reader.uint64());
           continue;
         }
         case 6: {
@@ -883,7 +888,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.maxStreamReceiveWindow = longToNumber(reader.uint64());
+          message.initStreamReceiveWindow = longToNumber(reader.uint64());
           continue;
         }
         case 7: {
@@ -891,7 +896,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.initConnReceiveWindow = longToNumber(reader.uint64());
+          message.maxStreamReceiveWindow = longToNumber(reader.uint64());
           continue;
         }
         case 8: {
@@ -899,7 +904,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.maxConnReceiveWindow = longToNumber(reader.uint64());
+          message.initConnReceiveWindow = longToNumber(reader.uint64());
           continue;
         }
         case 9: {
@@ -907,7 +912,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.maxIdleTimeout = longToNumber(reader.int64());
+          message.maxConnReceiveWindow = longToNumber(reader.uint64());
           continue;
         }
         case 10: {
@@ -915,7 +920,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.keepAlivePeriod = longToNumber(reader.int64());
+          message.maxIdleTimeout = longToNumber(reader.int64());
           continue;
         }
         case 11: {
@@ -923,11 +928,19 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
             break;
           }
 
-          message.disablePathMtuDiscovery = reader.bool();
+          message.keepAlivePeriod = longToNumber(reader.int64());
           continue;
         }
         case 12: {
           if (tag !== 96) {
+            break;
+          }
+
+          message.disablePathMtuDiscovery = reader.bool();
+          continue;
+        }
+        case 13: {
+          if (tag !== 104) {
             break;
           }
 
@@ -947,6 +960,11 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
     return {
       $type: QuicParams.$type,
       congestion: isSet(object.congestion) ? globalThis.String(object.congestion) : "",
+      bbrProfile: isSet(object.bbrProfile)
+        ? globalThis.String(object.bbrProfile)
+        : isSet(object.bbr_profile)
+        ? globalThis.String(object.bbr_profile)
+        : "",
       brutalUp: isSet(object.brutalUp)
         ? globalThis.Number(object.brutalUp)
         : isSet(object.brutal_up)
@@ -1010,6 +1028,9 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
     if (message.congestion !== "") {
       obj.congestion = message.congestion;
     }
+    if (message.bbrProfile !== "") {
+      obj.bbrProfile = message.bbrProfile;
+    }
     if (message.brutalUp !== 0) {
       obj.brutalUp = Math.round(message.brutalUp);
     }
@@ -1052,6 +1073,7 @@ export const QuicParams: MessageFns<QuicParams, "xray.transport.internet.QuicPar
   fromPartial(object: DeepPartial<QuicParams>): QuicParams {
     const message = createBaseQuicParams();
     message.congestion = object.congestion ?? "";
+    message.bbrProfile = object.bbrProfile ?? "";
     message.brutalUp = object.brutalUp ?? 0;
     message.brutalDown = object.brutalDown ?? 0;
     message.udpHop = (object.udpHop !== undefined && object.udpHop !== null)

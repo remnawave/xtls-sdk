@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { SniffingConfig } from "../../app/proxyman/config";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.vless";
@@ -13,6 +14,7 @@ export const protobufPackage = "xray.proxy.vless";
 export interface Reverse {
   $type: "xray.proxy.vless.Reverse";
   tag: string;
+  sniffing: SniffingConfig | undefined;
 }
 
 export interface Account {
@@ -31,7 +33,7 @@ export interface Account {
 }
 
 function createBaseReverse(): Reverse {
-  return { $type: "xray.proxy.vless.Reverse", tag: "" };
+  return { $type: "xray.proxy.vless.Reverse", tag: "", sniffing: undefined };
 }
 
 export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
@@ -40,6 +42,9 @@ export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
   encode(message: Reverse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.tag !== "") {
       writer.uint32(10).string(message.tag);
+    }
+    if (message.sniffing !== undefined) {
+      SniffingConfig.encode(message.sniffing, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -59,6 +64,14 @@ export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
           message.tag = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sniffing = SniffingConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -69,13 +82,20 @@ export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
   },
 
   fromJSON(object: any): Reverse {
-    return { $type: Reverse.$type, tag: isSet(object.tag) ? globalThis.String(object.tag) : "" };
+    return {
+      $type: Reverse.$type,
+      tag: isSet(object.tag) ? globalThis.String(object.tag) : "",
+      sniffing: isSet(object.sniffing) ? SniffingConfig.fromJSON(object.sniffing) : undefined,
+    };
   },
 
   toJSON(message: Reverse): unknown {
     const obj: any = {};
     if (message.tag !== "") {
       obj.tag = message.tag;
+    }
+    if (message.sniffing !== undefined) {
+      obj.sniffing = SniffingConfig.toJSON(message.sniffing);
     }
     return obj;
   },
@@ -86,6 +106,9 @@ export const Reverse: MessageFns<Reverse, "xray.proxy.vless.Reverse"> = {
   fromPartial(object: DeepPartial<Reverse>): Reverse {
     const message = createBaseReverse();
     message.tag = object.tag ?? "";
+    message.sniffing = (object.sniffing !== undefined && object.sniffing !== null)
+      ? SniffingConfig.fromPartial(object.sniffing)
+      : undefined;
     return message;
   },
 };

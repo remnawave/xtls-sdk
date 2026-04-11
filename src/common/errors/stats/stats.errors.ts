@@ -32,4 +32,8 @@ export const STATS_ERRORS = {
         code: 'A009',
         message: `Failed to get outbound stats: ${message}`,
     }),
+    GET_USERS_STATS_ERROR: (message: string) => ({
+        code: 'A010',
+        message: `Failed to get users stats: ${message}`,
+    }),
 } as const;

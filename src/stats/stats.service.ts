@@ -1,4 +1,4 @@
-import { Channel, createClient } from 'nice-grpc';
+import { Channel, ClientError, Status, createClient } from 'nice-grpc';
 
 import {
     GetAllUsersStatsResponseModel,
@@ -9,6 +9,8 @@ import {
     GetInboundStatsResponseModel,
     GetAllOutboundsStatsResponseModel,
     GetOutboundStatsResponseModel,
+    GetUsersStatsResponseModel,
+    UserStat,
 } from './models';
 import {
     StatsServiceDefinition,
@@ -45,6 +47,18 @@ export class StatsService {
      * @private
      */
     private readonly client: StatsServiceClient;
+
+    /**
+     * Cached flag indicating whether the remote Xray server supports the
+     * `GetUsersStats` unary method. `null` means "not probed yet", `true` means
+     * the method is available, `false` means the legacy fallback should be used.
+     *
+     * The flag is cached for the lifetime of this instance — if the Xray core
+     * is upgraded without re-creating the SDK, a manual re-instantiation is
+     * required to re-detect support.
+     * @private
+     */
+    private supportsGetUsersStats: boolean | null = null;
 
     /**
      * Creates a new StatsService instance
@@ -435,6 +449,129 @@ export class StatsService {
             return {
                 isOk: false,
                 ...STATS_ERRORS.GET_OUTBOUND_STATS_ERROR(message),
+            };
+        }
+    }
+
+    /**
+     * Retrieves per-user statistics (online IP list and, optionally, traffic)
+     * from the Xray server.
+     *
+     * Prefers the native `GetUsersStats` gRPC method introduced in recent
+     * Xray-core versions. If the server replies with `UNIMPLEMENTED` (i.e. the
+     * method is missing), transparently falls back to the legacy approach of
+     * combining `GetAllOnlineUsers` + `GetStatsOnlineIpList`. The detection
+     * result is cached for the lifetime of this service instance, so the
+     * `UNIMPLEMENTED` round-trip happens at most once.
+     *
+     * Note: the `includeTraffic` flag is honored only on the native path. In
+     * legacy mode traffic is always returned as `undefined`, since the old
+     * endpoints do not expose per-user traffic in a single call.
+     *
+     * @param includeTraffic - Whether to request traffic counters alongside IPs (native path only).
+     * @param reset - Whether to reset the stats after retrieving them.
+     */
+    public async getUsersStats(
+        includeTraffic: boolean = false,
+        reset: boolean = false,
+    ): Promise<ISdkResponse<GetUsersStatsResponseModel>> {
+        if (this.supportsGetUsersStats === false) {
+            return this.getUsersStatsLegacy(reset);
+        }
+
+        try {
+            const response = await this.client.getUsersStats({
+                includeTraffic,
+                reset,
+            });
+
+            this.supportsGetUsersStats = true;
+
+            return {
+                isOk: true,
+                data: new GetUsersStatsResponseModel(response),
+            };
+        } catch (error) {
+            if (error instanceof ClientError && error.code === Status.UNIMPLEMENTED) {
+                this.supportsGetUsersStats = false;
+                return this.getUsersStatsLegacy(reset);
+            }
+
+            let message = '';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+            return {
+                isOk: false,
+                ...STATS_ERRORS.GET_USERS_STATS_ERROR(message),
+            };
+        }
+    }
+
+    /**
+     * Legacy fallback for {@link getUsersStats}. Uses `GetAllOnlineUsers` to
+     * enumerate currently connected users and then queries
+     * `GetStatsOnlineIpList` for each of them in parallel with a bounded
+     * worker pool. Always returns `traffic: undefined` for every user.
+     * @private
+     */
+    private async getUsersStatsLegacy(
+        reset: boolean,
+    ): Promise<ISdkResponse<GetUsersStatsResponseModel>> {
+        try {
+            const { users: onlineUsers } = await this.client.getAllOnlineUsers({});
+
+            // De-duplicate, just in case Xray ever returns the same email twice.
+            const uniqueEmails = Array.from(new Set(onlineUsers));
+
+            const results: UserStat[] = new Array(uniqueEmails.length);
+            const concurrency = Math.min(50, uniqueEmails.length);
+            let cursor = 0;
+
+            const worker = async (): Promise<void> => {
+                while (true) {
+                    const index = cursor++;
+                    if (index >= uniqueEmails.length) return;
+
+                    const email = uniqueEmails[index];
+                    let ips: UserStat['ips'] = [];
+                    try {
+                        const ipListResponse = await this.client.getStatsOnlineIpList({
+                            name: `user>>>${email}>>>online`,
+                            reset,
+                        });
+                        ips = Object.entries(ipListResponse.ips).map(([ip, lastSeen]) => ({
+                            ip,
+                            lastSeen: new Date(lastSeen * 1000),
+                        }));
+                    } catch {
+                        // Per-user failure is non-fatal: fall through with empty ips.
+                    }
+
+                    results[index] = { id: email, ips, traffic: undefined };
+                }
+            };
+
+            const workers: Promise<void>[] = [];
+            for (let i = 0; i < concurrency; i++) {
+                workers.push(worker());
+            }
+            await Promise.all(workers);
+
+            const filtered = results.filter((user) => user.ips.length > 0);
+
+            return {
+                isOk: true,
+                data: GetUsersStatsResponseModel.fromUserStats(filtered),
+            };
+        } catch (error) {
+            let message = '';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+            return {
+                isOk: false,
+                ...STATS_ERRORS.GET_USERS_STATS_ERROR(message),
             };
         }
     }

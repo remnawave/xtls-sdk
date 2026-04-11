@@ -21,6 +21,7 @@ const PROTO_DIR = path.join(__dirname, '../src/xray-protos');
 const execAsync = promisify(exec);
 
 async function downloadTarGz(url: string, dest: string) {
+    console.log(`Downloading ${url} to ${dest}`);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to download file: ${response.statusText}`);
 
