@@ -521,23 +521,25 @@ export class StatsService {
         try {
             const { users: onlineUsers } = await this.client.getAllOnlineUsers({});
 
-            // De-duplicate, just in case Xray ever returns the same email twice.
-            const uniqueEmails = Array.from(new Set(onlineUsers));
+            const onlinePairs = Array.from(new Set(onlineUsers)).map((metricName) => ({
+                metricName,
+                email: metricName.slice('user>>>'.length, -'>>>online'.length),
+            }));
 
-            const results: UserStat[] = new Array(uniqueEmails.length);
-            const concurrency = Math.min(50, uniqueEmails.length);
+            const results: UserStat[] = new Array(onlinePairs.length);
+            const concurrency = Math.min(50, onlinePairs.length);
             let cursor = 0;
 
             const worker = async (): Promise<void> => {
                 while (true) {
                     const index = cursor++;
-                    if (index >= uniqueEmails.length) return;
+                    if (index >= onlinePairs.length) return;
 
-                    const email = uniqueEmails[index];
+                    const { metricName, email } = onlinePairs[index];
                     let ips: UserStat['ips'] = [];
                     try {
                         const ipListResponse = await this.client.getStatsOnlineIpList({
-                            name: `user>>>${email}>>>online`,
+                            name: metricName,
                             reset,
                         });
                         ips = Object.entries(ipListResponse.ips).map(([ip, lastSeen]) => ({
@@ -545,7 +547,7 @@ export class StatsService {
                             lastSeen: new Date(lastSeen * 1000),
                         }));
                     } catch {
-                        // Per-user failure is non-fatal: fall through with empty ips.
+                        // ignore
                     }
 
                     results[index] = { userId: email, ips, traffic: undefined };
