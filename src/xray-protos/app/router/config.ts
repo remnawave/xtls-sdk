@@ -6,112 +6,13 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { DomainRule, IPRule } from "../../common/geodata/geodat";
 import { Network, networkFromJSON, networkToJSON } from "../../common/net/network";
 import { PortList } from "../../common/net/port";
 import { TypedMessage } from "../../common/serial/typed_message";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.app.router";
-
-/** Domain for routing decision. */
-export interface Domain {
-  $type: "xray.app.router.Domain";
-  /** Domain matching type. */
-  type: Domain_Type;
-  /** Domain value. */
-  value: string;
-  /** Attributes of this domain. May be used for filtering. */
-  attribute: Domain_Attribute[];
-}
-
-/** Type of domain value. */
-export enum Domain_Type {
-  /** Plain - The value is used as is. */
-  Plain = 0,
-  /** Regex - The value is used as a regular expression. */
-  Regex = 1,
-  /** Domain - The value is a root domain. */
-  Domain = 2,
-  /** Full - The value is a domain. */
-  Full = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function domain_TypeFromJSON(object: any): Domain_Type {
-  switch (object) {
-    case 0:
-    case "Plain":
-      return Domain_Type.Plain;
-    case 1:
-    case "Regex":
-      return Domain_Type.Regex;
-    case 2:
-    case "Domain":
-      return Domain_Type.Domain;
-    case 3:
-    case "Full":
-      return Domain_Type.Full;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Domain_Type.UNRECOGNIZED;
-  }
-}
-
-export function domain_TypeToJSON(object: Domain_Type): string {
-  switch (object) {
-    case Domain_Type.Plain:
-      return "Plain";
-    case Domain_Type.Regex:
-      return "Regex";
-    case Domain_Type.Domain:
-      return "Domain";
-    case Domain_Type.Full:
-      return "Full";
-    case Domain_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export interface Domain_Attribute {
-  $type: "xray.app.router.Domain.Attribute";
-  key: string;
-  boolValue?: boolean | undefined;
-  intValue?: number | undefined;
-}
-
-/** IP for routing decision, in CIDR form. */
-export interface CIDR {
-  $type: "xray.app.router.CIDR";
-  /** IP address, should be either 4 or 16 bytes. */
-  ip: Uint8Array;
-  /** Number of leading ones in the network mask. */
-  prefix: number;
-}
-
-export interface GeoIP {
-  $type: "xray.app.router.GeoIP";
-  countryCode: string;
-  cidr: CIDR[];
-  reverseMatch: boolean;
-}
-
-export interface GeoIPList {
-  $type: "xray.app.router.GeoIPList";
-  entry: GeoIP[];
-}
-
-export interface GeoSite {
-  $type: "xray.app.router.GeoSite";
-  countryCode: string;
-  domain: Domain[];
-}
-
-export interface GeoSiteList {
-  $type: "xray.app.router.GeoSiteList";
-  entry: GeoSite[];
-}
 
 export interface RoutingRule {
   $type: "xray.app.router.RoutingRule";
@@ -123,32 +24,26 @@ export interface RoutingRule {
   balancingTag?: string | undefined;
   ruleTag: string;
   /** List of domains for target domain matching. */
-  domain: Domain[];
-  /**
-   * List of GeoIPs for target IP address matching. If this entry exists, the
-   * cidr above will have no effect. GeoIP fields with the same country code are
-   * supposed to contain exactly same content. They will be merged during
-   * runtime. For customized GeoIPs, please leave country code empty.
-   */
-  geoip: GeoIP[];
-  /** List of ports. */
+  domain: DomainRule[];
+  /** List of IPs for target IP address matching. */
+  ip: IPRule[];
+  /** List of ports for target port matching. */
   portList:
     | PortList
     | undefined;
   /** List of networks for matching. */
   networks: Network[];
-  /**
-   * List of GeoIPs for source IP address matching. If this entry exists, the
-   * source_cidr above will have no effect.
-   */
-  sourceGeoip: GeoIP[];
+  /** List of IPs for source IP address matching. */
+  sourceIp: IPRule[];
   /** List of ports for source port matching. */
   sourcePortList: PortList | undefined;
   userEmail: string[];
   inboundTag: string[];
   protocol: string[];
   attributes: { [key: string]: string };
-  localGeoip: GeoIP[];
+  /** List of IPs for local IP address matching. */
+  localIp: IPRule[];
+  /** List of ports for local port matching. */
   localPortList: PortList | undefined;
   vlessRouteList: PortList | undefined;
   process: string[];
@@ -253,611 +148,6 @@ export function config_DomainStrategyToJSON(object: Config_DomainStrategy): stri
   }
 }
 
-function createBaseDomain(): Domain {
-  return { $type: "xray.app.router.Domain", type: 0, value: "", attribute: [] };
-}
-
-export const Domain: MessageFns<Domain, "xray.app.router.Domain"> = {
-  $type: "xray.app.router.Domain" as const,
-
-  encode(message: Domain, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    if (message.value !== "") {
-      writer.uint32(18).string(message.value);
-    }
-    for (const v of message.attribute) {
-      Domain_Attribute.encode(v!, writer.uint32(26).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Domain {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDomain();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.value = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.attribute.push(Domain_Attribute.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Domain {
-    return {
-      $type: Domain.$type,
-      type: isSet(object.type) ? domain_TypeFromJSON(object.type) : 0,
-      value: isSet(object.value) ? globalThis.String(object.value) : "",
-      attribute: globalThis.Array.isArray(object?.attribute)
-        ? object.attribute.map((e: any) => Domain_Attribute.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: Domain): unknown {
-    const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = domain_TypeToJSON(message.type);
-    }
-    if (message.value !== "") {
-      obj.value = message.value;
-    }
-    if (message.attribute?.length) {
-      obj.attribute = message.attribute.map((e) => Domain_Attribute.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Domain>): Domain {
-    return Domain.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Domain>): Domain {
-    const message = createBaseDomain();
-    message.type = object.type ?? 0;
-    message.value = object.value ?? "";
-    message.attribute = object.attribute?.map((e) => Domain_Attribute.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-messageTypeRegistry.set(Domain.$type, Domain);
-
-function createBaseDomain_Attribute(): Domain_Attribute {
-  return { $type: "xray.app.router.Domain.Attribute", key: "", boolValue: undefined, intValue: undefined };
-}
-
-export const Domain_Attribute: MessageFns<Domain_Attribute, "xray.app.router.Domain.Attribute"> = {
-  $type: "xray.app.router.Domain.Attribute" as const,
-
-  encode(message: Domain_Attribute, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.key !== "") {
-      writer.uint32(10).string(message.key);
-    }
-    if (message.boolValue !== undefined) {
-      writer.uint32(16).bool(message.boolValue);
-    }
-    if (message.intValue !== undefined) {
-      writer.uint32(24).int64(message.intValue);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): Domain_Attribute {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDomain_Attribute();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.key = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.boolValue = reader.bool();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.intValue = longToNumber(reader.int64());
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Domain_Attribute {
-    return {
-      $type: Domain_Attribute.$type,
-      key: isSet(object.key) ? globalThis.String(object.key) : "",
-      boolValue: isSet(object.boolValue)
-        ? globalThis.Boolean(object.boolValue)
-        : isSet(object.bool_value)
-        ? globalThis.Boolean(object.bool_value)
-        : undefined,
-      intValue: isSet(object.intValue)
-        ? globalThis.Number(object.intValue)
-        : isSet(object.int_value)
-        ? globalThis.Number(object.int_value)
-        : undefined,
-    };
-  },
-
-  toJSON(message: Domain_Attribute): unknown {
-    const obj: any = {};
-    if (message.key !== "") {
-      obj.key = message.key;
-    }
-    if (message.boolValue !== undefined) {
-      obj.boolValue = message.boolValue;
-    }
-    if (message.intValue !== undefined) {
-      obj.intValue = Math.round(message.intValue);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Domain_Attribute>): Domain_Attribute {
-    return Domain_Attribute.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Domain_Attribute>): Domain_Attribute {
-    const message = createBaseDomain_Attribute();
-    message.key = object.key ?? "";
-    message.boolValue = object.boolValue ?? undefined;
-    message.intValue = object.intValue ?? undefined;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(Domain_Attribute.$type, Domain_Attribute);
-
-function createBaseCIDR(): CIDR {
-  return { $type: "xray.app.router.CIDR", ip: new Uint8Array(0), prefix: 0 };
-}
-
-export const CIDR: MessageFns<CIDR, "xray.app.router.CIDR"> = {
-  $type: "xray.app.router.CIDR" as const,
-
-  encode(message: CIDR, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.ip.length !== 0) {
-      writer.uint32(10).bytes(message.ip);
-    }
-    if (message.prefix !== 0) {
-      writer.uint32(16).uint32(message.prefix);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): CIDR {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCIDR();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.ip = reader.bytes();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.prefix = reader.uint32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CIDR {
-    return {
-      $type: CIDR.$type,
-      ip: isSet(object.ip) ? bytesFromBase64(object.ip) : new Uint8Array(0),
-      prefix: isSet(object.prefix) ? globalThis.Number(object.prefix) : 0,
-    };
-  },
-
-  toJSON(message: CIDR): unknown {
-    const obj: any = {};
-    if (message.ip.length !== 0) {
-      obj.ip = base64FromBytes(message.ip);
-    }
-    if (message.prefix !== 0) {
-      obj.prefix = Math.round(message.prefix);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CIDR>): CIDR {
-    return CIDR.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CIDR>): CIDR {
-    const message = createBaseCIDR();
-    message.ip = object.ip ?? new Uint8Array(0);
-    message.prefix = object.prefix ?? 0;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(CIDR.$type, CIDR);
-
-function createBaseGeoIP(): GeoIP {
-  return { $type: "xray.app.router.GeoIP", countryCode: "", cidr: [], reverseMatch: false };
-}
-
-export const GeoIP: MessageFns<GeoIP, "xray.app.router.GeoIP"> = {
-  $type: "xray.app.router.GeoIP" as const,
-
-  encode(message: GeoIP, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.countryCode !== "") {
-      writer.uint32(10).string(message.countryCode);
-    }
-    for (const v of message.cidr) {
-      CIDR.encode(v!, writer.uint32(18).fork()).join();
-    }
-    if (message.reverseMatch !== false) {
-      writer.uint32(24).bool(message.reverseMatch);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GeoIP {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGeoIP();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.countryCode = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.cidr.push(CIDR.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.reverseMatch = reader.bool();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GeoIP {
-    return {
-      $type: GeoIP.$type,
-      countryCode: isSet(object.countryCode)
-        ? globalThis.String(object.countryCode)
-        : isSet(object.country_code)
-        ? globalThis.String(object.country_code)
-        : "",
-      cidr: globalThis.Array.isArray(object?.cidr) ? object.cidr.map((e: any) => CIDR.fromJSON(e)) : [],
-      reverseMatch: isSet(object.reverseMatch)
-        ? globalThis.Boolean(object.reverseMatch)
-        : isSet(object.reverse_match)
-        ? globalThis.Boolean(object.reverse_match)
-        : false,
-    };
-  },
-
-  toJSON(message: GeoIP): unknown {
-    const obj: any = {};
-    if (message.countryCode !== "") {
-      obj.countryCode = message.countryCode;
-    }
-    if (message.cidr?.length) {
-      obj.cidr = message.cidr.map((e) => CIDR.toJSON(e));
-    }
-    if (message.reverseMatch !== false) {
-      obj.reverseMatch = message.reverseMatch;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GeoIP>): GeoIP {
-    return GeoIP.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GeoIP>): GeoIP {
-    const message = createBaseGeoIP();
-    message.countryCode = object.countryCode ?? "";
-    message.cidr = object.cidr?.map((e) => CIDR.fromPartial(e)) || [];
-    message.reverseMatch = object.reverseMatch ?? false;
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GeoIP.$type, GeoIP);
-
-function createBaseGeoIPList(): GeoIPList {
-  return { $type: "xray.app.router.GeoIPList", entry: [] };
-}
-
-export const GeoIPList: MessageFns<GeoIPList, "xray.app.router.GeoIPList"> = {
-  $type: "xray.app.router.GeoIPList" as const,
-
-  encode(message: GeoIPList, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.entry) {
-      GeoIP.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GeoIPList {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGeoIPList();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.entry.push(GeoIP.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GeoIPList {
-    return {
-      $type: GeoIPList.$type,
-      entry: globalThis.Array.isArray(object?.entry) ? object.entry.map((e: any) => GeoIP.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: GeoIPList): unknown {
-    const obj: any = {};
-    if (message.entry?.length) {
-      obj.entry = message.entry.map((e) => GeoIP.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GeoIPList>): GeoIPList {
-    return GeoIPList.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GeoIPList>): GeoIPList {
-    const message = createBaseGeoIPList();
-    message.entry = object.entry?.map((e) => GeoIP.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GeoIPList.$type, GeoIPList);
-
-function createBaseGeoSite(): GeoSite {
-  return { $type: "xray.app.router.GeoSite", countryCode: "", domain: [] };
-}
-
-export const GeoSite: MessageFns<GeoSite, "xray.app.router.GeoSite"> = {
-  $type: "xray.app.router.GeoSite" as const,
-
-  encode(message: GeoSite, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.countryCode !== "") {
-      writer.uint32(10).string(message.countryCode);
-    }
-    for (const v of message.domain) {
-      Domain.encode(v!, writer.uint32(18).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GeoSite {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGeoSite();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.countryCode = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.domain.push(Domain.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GeoSite {
-    return {
-      $type: GeoSite.$type,
-      countryCode: isSet(object.countryCode)
-        ? globalThis.String(object.countryCode)
-        : isSet(object.country_code)
-        ? globalThis.String(object.country_code)
-        : "",
-      domain: globalThis.Array.isArray(object?.domain) ? object.domain.map((e: any) => Domain.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: GeoSite): unknown {
-    const obj: any = {};
-    if (message.countryCode !== "") {
-      obj.countryCode = message.countryCode;
-    }
-    if (message.domain?.length) {
-      obj.domain = message.domain.map((e) => Domain.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GeoSite>): GeoSite {
-    return GeoSite.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GeoSite>): GeoSite {
-    const message = createBaseGeoSite();
-    message.countryCode = object.countryCode ?? "";
-    message.domain = object.domain?.map((e) => Domain.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GeoSite.$type, GeoSite);
-
-function createBaseGeoSiteList(): GeoSiteList {
-  return { $type: "xray.app.router.GeoSiteList", entry: [] };
-}
-
-export const GeoSiteList: MessageFns<GeoSiteList, "xray.app.router.GeoSiteList"> = {
-  $type: "xray.app.router.GeoSiteList" as const,
-
-  encode(message: GeoSiteList, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.entry) {
-      GeoSite.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GeoSiteList {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGeoSiteList();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.entry.push(GeoSite.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GeoSiteList {
-    return {
-      $type: GeoSiteList.$type,
-      entry: globalThis.Array.isArray(object?.entry) ? object.entry.map((e: any) => GeoSite.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: GeoSiteList): unknown {
-    const obj: any = {};
-    if (message.entry?.length) {
-      obj.entry = message.entry.map((e) => GeoSite.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<GeoSiteList>): GeoSiteList {
-    return GeoSiteList.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<GeoSiteList>): GeoSiteList {
-    const message = createBaseGeoSiteList();
-    message.entry = object.entry?.map((e) => GeoSite.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-messageTypeRegistry.set(GeoSiteList.$type, GeoSiteList);
-
 function createBaseRoutingRule(): RoutingRule {
   return {
     $type: "xray.app.router.RoutingRule",
@@ -865,16 +155,16 @@ function createBaseRoutingRule(): RoutingRule {
     balancingTag: undefined,
     ruleTag: "",
     domain: [],
-    geoip: [],
+    ip: [],
     portList: undefined,
     networks: [],
-    sourceGeoip: [],
+    sourceIp: [],
     sourcePortList: undefined,
     userEmail: [],
     inboundTag: [],
     protocol: [],
     attributes: {},
-    localGeoip: [],
+    localIp: [],
     localPortList: undefined,
     vlessRouteList: undefined,
     process: [],
@@ -896,10 +186,10 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       writer.uint32(154).string(message.ruleTag);
     }
     for (const v of message.domain) {
-      Domain.encode(v!, writer.uint32(18).fork()).join();
+      DomainRule.encode(v!, writer.uint32(18).fork()).join();
     }
-    for (const v of message.geoip) {
-      GeoIP.encode(v!, writer.uint32(82).fork()).join();
+    for (const v of message.ip) {
+      IPRule.encode(v!, writer.uint32(82).fork()).join();
     }
     if (message.portList !== undefined) {
       PortList.encode(message.portList, writer.uint32(114).fork()).join();
@@ -909,8 +199,8 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       writer.int32(v);
     }
     writer.join();
-    for (const v of message.sourceGeoip) {
-      GeoIP.encode(v!, writer.uint32(90).fork()).join();
+    for (const v of message.sourceIp) {
+      IPRule.encode(v!, writer.uint32(90).fork()).join();
     }
     if (message.sourcePortList !== undefined) {
       PortList.encode(message.sourcePortList, writer.uint32(130).fork()).join();
@@ -931,8 +221,8 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         value,
       }, writer.uint32(122).fork()).join();
     });
-    for (const v of message.localGeoip) {
-      GeoIP.encode(v!, writer.uint32(138).fork()).join();
+    for (const v of message.localIp) {
+      IPRule.encode(v!, writer.uint32(138).fork()).join();
     }
     if (message.localPortList !== undefined) {
       PortList.encode(message.localPortList, writer.uint32(146).fork()).join();
@@ -985,7 +275,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
             break;
           }
 
-          message.domain.push(Domain.decode(reader, reader.uint32()));
+          message.domain.push(DomainRule.decode(reader, reader.uint32()));
           continue;
         }
         case 10: {
@@ -993,7 +283,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
             break;
           }
 
-          message.geoip.push(GeoIP.decode(reader, reader.uint32()));
+          message.ip.push(IPRule.decode(reader, reader.uint32()));
           continue;
         }
         case 14: {
@@ -1027,7 +317,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
             break;
           }
 
-          message.sourceGeoip.push(GeoIP.decode(reader, reader.uint32()));
+          message.sourceIp.push(IPRule.decode(reader, reader.uint32()));
           continue;
         }
         case 16: {
@@ -1078,7 +368,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
             break;
           }
 
-          message.localGeoip.push(GeoIP.decode(reader, reader.uint32()));
+          message.localIp.push(IPRule.decode(reader, reader.uint32()));
           continue;
         }
         case 18: {
@@ -1136,18 +426,18 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         : isSet(object.rule_tag)
         ? globalThis.String(object.rule_tag)
         : "",
-      domain: globalThis.Array.isArray(object?.domain) ? object.domain.map((e: any) => Domain.fromJSON(e)) : [],
-      geoip: globalThis.Array.isArray(object?.geoip) ? object.geoip.map((e: any) => GeoIP.fromJSON(e)) : [],
+      domain: globalThis.Array.isArray(object?.domain) ? object.domain.map((e: any) => DomainRule.fromJSON(e)) : [],
+      ip: globalThis.Array.isArray(object?.ip) ? object.ip.map((e: any) => IPRule.fromJSON(e)) : [],
       portList: isSet(object.portList)
         ? PortList.fromJSON(object.portList)
         : isSet(object.port_list)
         ? PortList.fromJSON(object.port_list)
         : undefined,
       networks: globalThis.Array.isArray(object?.networks) ? object.networks.map((e: any) => networkFromJSON(e)) : [],
-      sourceGeoip: globalThis.Array.isArray(object?.sourceGeoip)
-        ? object.sourceGeoip.map((e: any) => GeoIP.fromJSON(e))
-        : globalThis.Array.isArray(object?.source_geoip)
-        ? object.source_geoip.map((e: any) => GeoIP.fromJSON(e))
+      sourceIp: globalThis.Array.isArray(object?.sourceIp)
+        ? object.sourceIp.map((e: any) => IPRule.fromJSON(e))
+        : globalThis.Array.isArray(object?.source_ip)
+        ? object.source_ip.map((e: any) => IPRule.fromJSON(e))
         : [],
       sourcePortList: isSet(object.sourcePortList)
         ? PortList.fromJSON(object.sourcePortList)
@@ -1164,9 +454,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         : globalThis.Array.isArray(object?.inbound_tag)
         ? object.inbound_tag.map((e: any) => globalThis.String(e))
         : [],
-      protocol: globalThis.Array.isArray(object?.protocol)
-        ? object.protocol.map((e: any) => globalThis.String(e))
-        : [],
+      protocol: globalThis.Array.isArray(object?.protocol) ? object.protocol.map((e: any) => globalThis.String(e)) : [],
       attributes: isObject(object.attributes)
         ? (globalThis.Object.entries(object.attributes) as [string, any][]).reduce(
           (acc: { [key: string]: string }, [key, value]: [string, any]) => {
@@ -1176,10 +464,10 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
           {},
         )
         : {},
-      localGeoip: globalThis.Array.isArray(object?.localGeoip)
-        ? object.localGeoip.map((e: any) => GeoIP.fromJSON(e))
-        : globalThis.Array.isArray(object?.local_geoip)
-        ? object.local_geoip.map((e: any) => GeoIP.fromJSON(e))
+      localIp: globalThis.Array.isArray(object?.localIp)
+        ? object.localIp.map((e: any) => IPRule.fromJSON(e))
+        : globalThis.Array.isArray(object?.local_ip)
+        ? object.local_ip.map((e: any) => IPRule.fromJSON(e))
         : [],
       localPortList: isSet(object.localPortList)
         ? PortList.fromJSON(object.localPortList)
@@ -1210,10 +498,10 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       obj.ruleTag = message.ruleTag;
     }
     if (message.domain?.length) {
-      obj.domain = message.domain.map((e) => Domain.toJSON(e));
+      obj.domain = message.domain.map((e) => DomainRule.toJSON(e));
     }
-    if (message.geoip?.length) {
-      obj.geoip = message.geoip.map((e) => GeoIP.toJSON(e));
+    if (message.ip?.length) {
+      obj.ip = message.ip.map((e) => IPRule.toJSON(e));
     }
     if (message.portList !== undefined) {
       obj.portList = PortList.toJSON(message.portList);
@@ -1221,8 +509,8 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     if (message.networks?.length) {
       obj.networks = message.networks.map((e) => networkToJSON(e));
     }
-    if (message.sourceGeoip?.length) {
-      obj.sourceGeoip = message.sourceGeoip.map((e) => GeoIP.toJSON(e));
+    if (message.sourceIp?.length) {
+      obj.sourceIp = message.sourceIp.map((e) => IPRule.toJSON(e));
     }
     if (message.sourcePortList !== undefined) {
       obj.sourcePortList = PortList.toJSON(message.sourcePortList);
@@ -1245,8 +533,8 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
         });
       }
     }
-    if (message.localGeoip?.length) {
-      obj.localGeoip = message.localGeoip.map((e) => GeoIP.toJSON(e));
+    if (message.localIp?.length) {
+      obj.localIp = message.localIp.map((e) => IPRule.toJSON(e));
     }
     if (message.localPortList !== undefined) {
       obj.localPortList = PortList.toJSON(message.localPortList);
@@ -1271,13 +559,13 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
     message.tag = object.tag ?? undefined;
     message.balancingTag = object.balancingTag ?? undefined;
     message.ruleTag = object.ruleTag ?? "";
-    message.domain = object.domain?.map((e) => Domain.fromPartial(e)) || [];
-    message.geoip = object.geoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.domain = object.domain?.map((e) => DomainRule.fromPartial(e)) || [];
+    message.ip = object.ip?.map((e) => IPRule.fromPartial(e)) || [];
     message.portList = (object.portList !== undefined && object.portList !== null)
       ? PortList.fromPartial(object.portList)
       : undefined;
     message.networks = object.networks?.map((e) => e) || [];
-    message.sourceGeoip = object.sourceGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.sourceIp = object.sourceIp?.map((e) => IPRule.fromPartial(e)) || [];
     message.sourcePortList = (object.sourcePortList !== undefined && object.sourcePortList !== null)
       ? PortList.fromPartial(object.sourcePortList)
       : undefined;
@@ -1293,7 +581,7 @@ export const RoutingRule: MessageFns<RoutingRule, "xray.app.router.RoutingRule">
       },
       {},
     );
-    message.localGeoip = object.localGeoip?.map((e) => GeoIP.fromPartial(e)) || [];
+    message.localIp = object.localIp?.map((e) => IPRule.fromPartial(e)) || [];
     message.localPortList = (object.localPortList !== undefined && object.localPortList !== null)
       ? PortList.fromPartial(object.localPortList)
       : undefined;
@@ -2104,31 +1392,6 @@ export const Config: MessageFns<Config, "xray.app.router.Config"> = {
 };
 
 messageTypeRegistry.set(Config.$type, Config);
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if ((globalThis as any).Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = globalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if ((globalThis as any).Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(globalThis.String.fromCharCode(byte));
-    });
-    return globalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -10,6 +10,21 @@ import { messageTypeRegistry } from "../../../../../typeRegistry";
 
 export const protobufPackage = "xray.transport.internet.finalmask.header.custom";
 
+export interface Expr {
+  $type: "xray.transport.internet.finalmask.header.custom.Expr";
+  op: string;
+  args: ExprArg[];
+}
+
+export interface ExprArg {
+  $type: "xray.transport.internet.finalmask.header.custom.ExprArg";
+  bytes?: Uint8Array | undefined;
+  u64?: number | undefined;
+  var?: string | undefined;
+  metadata?: string | undefined;
+  expr?: Expr | undefined;
+}
+
 export interface TCPItem {
   $type: "xray.transport.internet.finalmask.header.custom.TCPItem";
   delayMin: number;
@@ -18,6 +33,9 @@ export interface TCPItem {
   randMin: number;
   randMax: number;
   packet: Uint8Array;
+  save: string;
+  var: string;
+  expr: Expr | undefined;
 }
 
 export interface TCPSequence {
@@ -38,13 +56,234 @@ export interface UDPItem {
   randMin: number;
   randMax: number;
   packet: Uint8Array;
+  save: string;
+  var: string;
+  expr: Expr | undefined;
 }
 
 export interface UDPConfig {
   $type: "xray.transport.internet.finalmask.header.custom.UDPConfig";
   client: UDPItem[];
   server: UDPItem[];
+  mode: string;
 }
+
+function createBaseExpr(): Expr {
+  return { $type: "xray.transport.internet.finalmask.header.custom.Expr", op: "", args: [] };
+}
+
+export const Expr: MessageFns<Expr, "xray.transport.internet.finalmask.header.custom.Expr"> = {
+  $type: "xray.transport.internet.finalmask.header.custom.Expr" as const,
+
+  encode(message: Expr, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.op !== "") {
+      writer.uint32(10).string(message.op);
+    }
+    for (const v of message.args) {
+      ExprArg.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Expr {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExpr();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.op = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.args.push(ExprArg.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Expr {
+    return {
+      $type: Expr.$type,
+      op: isSet(object.op) ? globalThis.String(object.op) : "",
+      args: globalThis.Array.isArray(object?.args) ? object.args.map((e: any) => ExprArg.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: Expr): unknown {
+    const obj: any = {};
+    if (message.op !== "") {
+      obj.op = message.op;
+    }
+    if (message.args?.length) {
+      obj.args = message.args.map((e) => ExprArg.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Expr>): Expr {
+    return Expr.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Expr>): Expr {
+    const message = createBaseExpr();
+    message.op = object.op ?? "";
+    message.args = object.args?.map((e) => ExprArg.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+messageTypeRegistry.set(Expr.$type, Expr);
+
+function createBaseExprArg(): ExprArg {
+  return {
+    $type: "xray.transport.internet.finalmask.header.custom.ExprArg",
+    bytes: undefined,
+    u64: undefined,
+    var: undefined,
+    metadata: undefined,
+    expr: undefined,
+  };
+}
+
+export const ExprArg: MessageFns<ExprArg, "xray.transport.internet.finalmask.header.custom.ExprArg"> = {
+  $type: "xray.transport.internet.finalmask.header.custom.ExprArg" as const,
+
+  encode(message: ExprArg, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.bytes !== undefined) {
+      writer.uint32(10).bytes(message.bytes);
+    }
+    if (message.u64 !== undefined) {
+      writer.uint32(16).uint64(message.u64);
+    }
+    if (message.var !== undefined) {
+      writer.uint32(26).string(message.var);
+    }
+    if (message.metadata !== undefined) {
+      writer.uint32(34).string(message.metadata);
+    }
+    if (message.expr !== undefined) {
+      Expr.encode(message.expr, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExprArg {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExprArg();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.bytes = reader.bytes();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.u64 = longToNumber(reader.uint64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.var = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.metadata = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.expr = Expr.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExprArg {
+    return {
+      $type: ExprArg.$type,
+      bytes: isSet(object.bytes) ? bytesFromBase64(object.bytes) : undefined,
+      u64: isSet(object.u64) ? globalThis.Number(object.u64) : undefined,
+      var: isSet(object.var) ? globalThis.String(object.var) : undefined,
+      metadata: isSet(object.metadata) ? globalThis.String(object.metadata) : undefined,
+      expr: isSet(object.expr) ? Expr.fromJSON(object.expr) : undefined,
+    };
+  },
+
+  toJSON(message: ExprArg): unknown {
+    const obj: any = {};
+    if (message.bytes !== undefined) {
+      obj.bytes = base64FromBytes(message.bytes);
+    }
+    if (message.u64 !== undefined) {
+      obj.u64 = Math.round(message.u64);
+    }
+    if (message.var !== undefined) {
+      obj.var = message.var;
+    }
+    if (message.metadata !== undefined) {
+      obj.metadata = message.metadata;
+    }
+    if (message.expr !== undefined) {
+      obj.expr = Expr.toJSON(message.expr);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExprArg>): ExprArg {
+    return ExprArg.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExprArg>): ExprArg {
+    const message = createBaseExprArg();
+    message.bytes = object.bytes ?? undefined;
+    message.u64 = object.u64 ?? undefined;
+    message.var = object.var ?? undefined;
+    message.metadata = object.metadata ?? undefined;
+    message.expr = (object.expr !== undefined && object.expr !== null) ? Expr.fromPartial(object.expr) : undefined;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(ExprArg.$type, ExprArg);
 
 function createBaseTCPItem(): TCPItem {
   return {
@@ -55,6 +294,9 @@ function createBaseTCPItem(): TCPItem {
     randMin: 0,
     randMax: 0,
     packet: new Uint8Array(0),
+    save: "",
+    var: "",
+    expr: undefined,
   };
 }
 
@@ -79,6 +321,15 @@ export const TCPItem: MessageFns<TCPItem, "xray.transport.internet.finalmask.hea
     }
     if (message.packet.length !== 0) {
       writer.uint32(50).bytes(message.packet);
+    }
+    if (message.save !== "") {
+      writer.uint32(58).string(message.save);
+    }
+    if (message.var !== "") {
+      writer.uint32(66).string(message.var);
+    }
+    if (message.expr !== undefined) {
+      Expr.encode(message.expr, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -138,6 +389,30 @@ export const TCPItem: MessageFns<TCPItem, "xray.transport.internet.finalmask.hea
           message.packet = reader.bytes();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.save = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.var = reader.string();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.expr = Expr.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -172,6 +447,9 @@ export const TCPItem: MessageFns<TCPItem, "xray.transport.internet.finalmask.hea
         ? globalThis.Number(object.rand_max)
         : 0,
       packet: isSet(object.packet) ? bytesFromBase64(object.packet) : new Uint8Array(0),
+      save: isSet(object.save) ? globalThis.String(object.save) : "",
+      var: isSet(object.var) ? globalThis.String(object.var) : "",
+      expr: isSet(object.expr) ? Expr.fromJSON(object.expr) : undefined,
     };
   },
 
@@ -195,6 +473,15 @@ export const TCPItem: MessageFns<TCPItem, "xray.transport.internet.finalmask.hea
     if (message.packet.length !== 0) {
       obj.packet = base64FromBytes(message.packet);
     }
+    if (message.save !== "") {
+      obj.save = message.save;
+    }
+    if (message.var !== "") {
+      obj.var = message.var;
+    }
+    if (message.expr !== undefined) {
+      obj.expr = Expr.toJSON(message.expr);
+    }
     return obj;
   },
 
@@ -209,6 +496,9 @@ export const TCPItem: MessageFns<TCPItem, "xray.transport.internet.finalmask.hea
     message.randMin = object.randMin ?? 0;
     message.randMax = object.randMax ?? 0;
     message.packet = object.packet ?? new Uint8Array(0);
+    message.save = object.save ?? "";
+    message.var = object.var ?? "";
+    message.expr = (object.expr !== undefined && object.expr !== null) ? Expr.fromPartial(object.expr) : undefined;
     return message;
   },
 };
@@ -384,6 +674,9 @@ function createBaseUDPItem(): UDPItem {
     randMin: 0,
     randMax: 0,
     packet: new Uint8Array(0),
+    save: "",
+    var: "",
+    expr: undefined,
   };
 }
 
@@ -402,6 +695,15 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
     }
     if (message.packet.length !== 0) {
       writer.uint32(34).bytes(message.packet);
+    }
+    if (message.save !== "") {
+      writer.uint32(42).string(message.save);
+    }
+    if (message.var !== "") {
+      writer.uint32(50).string(message.var);
+    }
+    if (message.expr !== undefined) {
+      Expr.encode(message.expr, writer.uint32(58).fork()).join();
     }
     return writer;
   },
@@ -445,6 +747,30 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
           message.packet = reader.bytes();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.save = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.var = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.expr = Expr.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -469,6 +795,9 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
         ? globalThis.Number(object.rand_max)
         : 0,
       packet: isSet(object.packet) ? bytesFromBase64(object.packet) : new Uint8Array(0),
+      save: isSet(object.save) ? globalThis.String(object.save) : "",
+      var: isSet(object.var) ? globalThis.String(object.var) : "",
+      expr: isSet(object.expr) ? Expr.fromJSON(object.expr) : undefined,
     };
   },
 
@@ -486,6 +815,15 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
     if (message.packet.length !== 0) {
       obj.packet = base64FromBytes(message.packet);
     }
+    if (message.save !== "") {
+      obj.save = message.save;
+    }
+    if (message.var !== "") {
+      obj.var = message.var;
+    }
+    if (message.expr !== undefined) {
+      obj.expr = Expr.toJSON(message.expr);
+    }
     return obj;
   },
 
@@ -498,6 +836,9 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
     message.randMin = object.randMin ?? 0;
     message.randMax = object.randMax ?? 0;
     message.packet = object.packet ?? new Uint8Array(0);
+    message.save = object.save ?? "";
+    message.var = object.var ?? "";
+    message.expr = (object.expr !== undefined && object.expr !== null) ? Expr.fromPartial(object.expr) : undefined;
     return message;
   },
 };
@@ -505,7 +846,7 @@ export const UDPItem: MessageFns<UDPItem, "xray.transport.internet.finalmask.hea
 messageTypeRegistry.set(UDPItem.$type, UDPItem);
 
 function createBaseUDPConfig(): UDPConfig {
-  return { $type: "xray.transport.internet.finalmask.header.custom.UDPConfig", client: [], server: [] };
+  return { $type: "xray.transport.internet.finalmask.header.custom.UDPConfig", client: [], server: [], mode: "" };
 }
 
 export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask.header.custom.UDPConfig"> = {
@@ -517,6 +858,9 @@ export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask
     }
     for (const v of message.server) {
       UDPItem.encode(v!, writer.uint32(18).fork()).join();
+    }
+    if (message.mode !== "") {
+      writer.uint32(26).string(message.mode);
     }
     return writer;
   },
@@ -544,6 +888,14 @@ export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask
           message.server.push(UDPItem.decode(reader, reader.uint32()));
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.mode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -558,6 +910,7 @@ export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask
       $type: UDPConfig.$type,
       client: globalThis.Array.isArray(object?.client) ? object.client.map((e: any) => UDPItem.fromJSON(e)) : [],
       server: globalThis.Array.isArray(object?.server) ? object.server.map((e: any) => UDPItem.fromJSON(e)) : [],
+      mode: isSet(object.mode) ? globalThis.String(object.mode) : "",
     };
   },
 
@@ -569,6 +922,9 @@ export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask
     if (message.server?.length) {
       obj.server = message.server.map((e) => UDPItem.toJSON(e));
     }
+    if (message.mode !== "") {
+      obj.mode = message.mode;
+    }
     return obj;
   },
 
@@ -579,6 +935,7 @@ export const UDPConfig: MessageFns<UDPConfig, "xray.transport.internet.finalmask
     const message = createBaseUDPConfig();
     message.client = object.client?.map((e) => UDPItem.fromPartial(e)) || [];
     message.server = object.server?.map((e) => UDPItem.fromPartial(e)) || [];
+    message.mode = object.mode ?? "";
     return message;
   },
 };

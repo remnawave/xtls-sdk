@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { DomainRule, IPRule } from "../../common/geodata/geodat";
 import { IPOrDomain } from "../../common/net/address";
 import { PortList } from "../../common/net/port";
 import { TypedMessage } from "../../common/serial/typed_message";
@@ -33,7 +34,8 @@ export interface SniffingConfig {
    * Supported values are "http", "tls", "fakedns".
    */
   destinationOverride: string[];
-  domainsExcluded: string[];
+  domainsExcluded: DomainRule[];
+  ipsExcluded: IPRule[];
   /**
    * Whether should only try to sniff metadata without waiting for client input.
    * Can be used to support SMTP like protocol where server send the first
@@ -143,6 +145,7 @@ function createBaseSniffingConfig(): SniffingConfig {
     enabled: false,
     destinationOverride: [],
     domainsExcluded: [],
+    ipsExcluded: [],
     metadataOnly: false,
     routeOnly: false,
   };
@@ -159,7 +162,10 @@ export const SniffingConfig: MessageFns<SniffingConfig, "xray.app.proxyman.Sniff
       writer.uint32(18).string(v!);
     }
     for (const v of message.domainsExcluded) {
-      writer.uint32(26).string(v!);
+      DomainRule.encode(v!, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.ipsExcluded) {
+      IPRule.encode(v!, writer.uint32(50).fork()).join();
     }
     if (message.metadataOnly !== false) {
       writer.uint32(32).bool(message.metadataOnly);
@@ -198,7 +204,15 @@ export const SniffingConfig: MessageFns<SniffingConfig, "xray.app.proxyman.Sniff
             break;
           }
 
-          message.domainsExcluded.push(reader.string());
+          message.domainsExcluded.push(DomainRule.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.ipsExcluded.push(IPRule.decode(reader, reader.uint32()));
           continue;
         }
         case 4: {
@@ -236,9 +250,14 @@ export const SniffingConfig: MessageFns<SniffingConfig, "xray.app.proxyman.Sniff
         ? object.destination_override.map((e: any) => globalThis.String(e))
         : [],
       domainsExcluded: globalThis.Array.isArray(object?.domainsExcluded)
-        ? object.domainsExcluded.map((e: any) => globalThis.String(e))
+        ? object.domainsExcluded.map((e: any) => DomainRule.fromJSON(e))
         : globalThis.Array.isArray(object?.domains_excluded)
-        ? object.domains_excluded.map((e: any) => globalThis.String(e))
+        ? object.domains_excluded.map((e: any) => DomainRule.fromJSON(e))
+        : [],
+      ipsExcluded: globalThis.Array.isArray(object?.ipsExcluded)
+        ? object.ipsExcluded.map((e: any) => IPRule.fromJSON(e))
+        : globalThis.Array.isArray(object?.ips_excluded)
+        ? object.ips_excluded.map((e: any) => IPRule.fromJSON(e))
         : [],
       metadataOnly: isSet(object.metadataOnly)
         ? globalThis.Boolean(object.metadataOnly)
@@ -262,7 +281,10 @@ export const SniffingConfig: MessageFns<SniffingConfig, "xray.app.proxyman.Sniff
       obj.destinationOverride = message.destinationOverride;
     }
     if (message.domainsExcluded?.length) {
-      obj.domainsExcluded = message.domainsExcluded;
+      obj.domainsExcluded = message.domainsExcluded.map((e) => DomainRule.toJSON(e));
+    }
+    if (message.ipsExcluded?.length) {
+      obj.ipsExcluded = message.ipsExcluded.map((e) => IPRule.toJSON(e));
     }
     if (message.metadataOnly !== false) {
       obj.metadataOnly = message.metadataOnly;
@@ -280,7 +302,8 @@ export const SniffingConfig: MessageFns<SniffingConfig, "xray.app.proxyman.Sniff
     const message = createBaseSniffingConfig();
     message.enabled = object.enabled ?? false;
     message.destinationOverride = object.destinationOverride?.map((e) => e) || [];
-    message.domainsExcluded = object.domainsExcluded?.map((e) => e) || [];
+    message.domainsExcluded = object.domainsExcluded?.map((e) => DomainRule.fromPartial(e)) || [];
+    message.ipsExcluded = object.ipsExcluded?.map((e) => IPRule.fromPartial(e)) || [];
     message.metadataOnly = object.metadataOnly ?? false;
     message.routeOnly = object.routeOnly ?? false;
     return message;

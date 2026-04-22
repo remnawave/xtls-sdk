@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as tar from 'tar';
 
-const VERSION = '26.2.6';
+const VERSION = '26.4.17';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
 
 const SOURCE = process.argv[2] || 'tag';

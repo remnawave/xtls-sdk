@@ -12,19 +12,23 @@ export const protobufPackage = "xray.transport.internet.finalmask.xdns";
 
 export interface Config {
   $type: "xray.transport.internet.finalmask.xdns.Config";
-  domain: string;
+  domains: string[];
+  resolvers: string[];
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.transport.internet.finalmask.xdns.Config", domain: "" };
+  return { $type: "xray.transport.internet.finalmask.xdns.Config", domains: [], resolvers: [] };
 }
 
 export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.Config"> = {
   $type: "xray.transport.internet.finalmask.xdns.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.domain !== "") {
-      writer.uint32(10).string(message.domain);
+    for (const v of message.domains) {
+      writer.uint32(10).string(v!);
+    }
+    for (const v of message.resolvers) {
+      writer.uint32(18).string(v!);
     }
     return writer;
   },
@@ -41,7 +45,15 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
             break;
           }
 
-          message.domain = reader.string();
+          message.domains.push(reader.string());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.resolvers.push(reader.string());
           continue;
         }
       }
@@ -54,13 +66,22 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
   },
 
   fromJSON(object: any): Config {
-    return { $type: Config.$type, domain: isSet(object.domain) ? globalThis.String(object.domain) : "" };
+    return {
+      $type: Config.$type,
+      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
+      resolvers: globalThis.Array.isArray(object?.resolvers)
+        ? object.resolvers.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.domain !== "") {
-      obj.domain = message.domain;
+    if (message.domains?.length) {
+      obj.domains = message.domains;
+    }
+    if (message.resolvers?.length) {
+      obj.resolvers = message.resolvers;
     }
     return obj;
   },
@@ -70,7 +91,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.domain = object.domain ?? "";
+    message.domains = object.domains?.map((e) => e) || [];
+    message.resolvers = object.resolvers?.map((e) => e) || [];
     return message;
   },
 };
@@ -84,10 +106,6 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
-
-function isSet(value: any): boolean {
-  return value !== null && value !== undefined;
-}
 
 export interface MessageFns<T, V extends string> {
   readonly $type: V;

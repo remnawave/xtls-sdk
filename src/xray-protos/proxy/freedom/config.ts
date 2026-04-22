@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { IPRule } from "../../common/geodata/geodat";
 import { ServerEndpoint } from "../../common/protocol/server_spec";
 import { DomainStrategy, domainStrategyFromJSON, domainStrategyToJSON } from "../../transport/internet/config";
 import { messageTypeRegistry } from "../../typeRegistry";
@@ -39,6 +40,11 @@ export interface Noise {
   applyTo: string;
 }
 
+export interface IPRules {
+  $type: "xray.proxy.freedom.IPRules";
+  rules: IPRule[];
+}
+
 export interface Config {
   $type: "xray.proxy.freedom.Config";
   domainStrategy: DomainStrategy;
@@ -47,6 +53,7 @@ export interface Config {
   fragment: Fragment | undefined;
   proxyProtocol: number;
   noises: Noise[];
+  ipsBlocked?: IPRules | undefined;
 }
 
 function createBaseDestinationOverride(): DestinationOverride {
@@ -508,6 +515,71 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
 
 messageTypeRegistry.set(Noise.$type, Noise);
 
+function createBaseIPRules(): IPRules {
+  return { $type: "xray.proxy.freedom.IPRules", rules: [] };
+}
+
+export const IPRules: MessageFns<IPRules, "xray.proxy.freedom.IPRules"> = {
+  $type: "xray.proxy.freedom.IPRules" as const,
+
+  encode(message: IPRules, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.rules) {
+      IPRule.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): IPRules {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIPRules();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rules.push(IPRule.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): IPRules {
+    return {
+      $type: IPRules.$type,
+      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => IPRule.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: IPRules): unknown {
+    const obj: any = {};
+    if (message.rules?.length) {
+      obj.rules = message.rules.map((e) => IPRule.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<IPRules>): IPRules {
+    return IPRules.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<IPRules>): IPRules {
+    const message = createBaseIPRules();
+    message.rules = object.rules?.map((e) => IPRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+messageTypeRegistry.set(IPRules.$type, IPRules);
+
 function createBaseConfig(): Config {
   return {
     $type: "xray.proxy.freedom.Config",
@@ -517,6 +589,7 @@ function createBaseConfig(): Config {
     fragment: undefined,
     proxyProtocol: 0,
     noises: [],
+    ipsBlocked: undefined,
   };
 }
 
@@ -541,6 +614,9 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     }
     for (const v of message.noises) {
       Noise.encode(v!, writer.uint32(58).fork()).join();
+    }
+    if (message.ipsBlocked !== undefined) {
+      IPRules.encode(message.ipsBlocked, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -600,6 +676,14 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
           message.noises.push(Noise.decode(reader, reader.uint32()));
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.ipsBlocked = IPRules.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -634,6 +718,11 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
         ? globalThis.Number(object.proxy_protocol)
         : 0,
       noises: globalThis.Array.isArray(object?.noises) ? object.noises.map((e: any) => Noise.fromJSON(e)) : [],
+      ipsBlocked: isSet(object.ipsBlocked)
+        ? IPRules.fromJSON(object.ipsBlocked)
+        : isSet(object.ips_blocked)
+        ? IPRules.fromJSON(object.ips_blocked)
+        : undefined,
     };
   },
 
@@ -657,6 +746,9 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     if (message.noises?.length) {
       obj.noises = message.noises.map((e) => Noise.toJSON(e));
     }
+    if (message.ipsBlocked !== undefined) {
+      obj.ipsBlocked = IPRules.toJSON(message.ipsBlocked);
+    }
     return obj;
   },
 
@@ -675,6 +767,9 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
       : undefined;
     message.proxyProtocol = object.proxyProtocol ?? 0;
     message.noises = object.noises?.map((e) => Noise.fromPartial(e)) || [];
+    message.ipsBlocked = (object.ipsBlocked !== undefined && object.ipsBlocked !== null)
+      ? IPRules.fromPartial(object.ipsBlocked)
+      : undefined;
     return message;
   },
 };

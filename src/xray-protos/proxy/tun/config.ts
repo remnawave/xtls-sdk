@@ -14,11 +14,24 @@ export interface Config {
   $type: "xray.proxy.tun.Config";
   name: string;
   MTU: number;
+  gateway: string[];
+  DNS: string[];
   userLevel: number;
+  autoSystemRoutingTable: string[];
+  autoOutboundsInterface: string;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.tun.Config", name: "", MTU: 0, userLevel: 0 };
+  return {
+    $type: "xray.proxy.tun.Config",
+    name: "",
+    MTU: 0,
+    gateway: [],
+    DNS: [],
+    userLevel: 0,
+    autoSystemRoutingTable: [],
+    autoOutboundsInterface: "",
+  };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
@@ -31,8 +44,20 @@ export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
     if (message.MTU !== 0) {
       writer.uint32(16).uint32(message.MTU);
     }
+    for (const v of message.gateway) {
+      writer.uint32(26).string(v!);
+    }
+    for (const v of message.DNS) {
+      writer.uint32(34).string(v!);
+    }
     if (message.userLevel !== 0) {
-      writer.uint32(24).uint32(message.userLevel);
+      writer.uint32(40).uint32(message.userLevel);
+    }
+    for (const v of message.autoSystemRoutingTable) {
+      writer.uint32(50).string(v!);
+    }
+    if (message.autoOutboundsInterface !== "") {
+      writer.uint32(58).string(message.autoOutboundsInterface);
     }
     return writer;
   },
@@ -61,11 +86,43 @@ export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
           continue;
         }
         case 3: {
-          if (tag !== 24) {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.gateway.push(reader.string());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.DNS.push(reader.string());
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
             break;
           }
 
           message.userLevel = reader.uint32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.autoSystemRoutingTable.push(reader.string());
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.autoOutboundsInterface = reader.string();
           continue;
         }
       }
@@ -82,11 +139,23 @@ export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
       $type: Config.$type,
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       MTU: isSet(object.MTU) ? globalThis.Number(object.MTU) : 0,
+      gateway: globalThis.Array.isArray(object?.gateway) ? object.gateway.map((e: any) => globalThis.String(e)) : [],
+      DNS: globalThis.Array.isArray(object?.DNS) ? object.DNS.map((e: any) => globalThis.String(e)) : [],
       userLevel: isSet(object.userLevel)
         ? globalThis.Number(object.userLevel)
         : isSet(object.user_level)
         ? globalThis.Number(object.user_level)
         : 0,
+      autoSystemRoutingTable: globalThis.Array.isArray(object?.autoSystemRoutingTable)
+        ? object.autoSystemRoutingTable.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.auto_system_routing_table)
+        ? object.auto_system_routing_table.map((e: any) => globalThis.String(e))
+        : [],
+      autoOutboundsInterface: isSet(object.autoOutboundsInterface)
+        ? globalThis.String(object.autoOutboundsInterface)
+        : isSet(object.auto_outbounds_interface)
+        ? globalThis.String(object.auto_outbounds_interface)
+        : "",
     };
   },
 
@@ -98,8 +167,20 @@ export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
     if (message.MTU !== 0) {
       obj.MTU = Math.round(message.MTU);
     }
+    if (message.gateway?.length) {
+      obj.gateway = message.gateway;
+    }
+    if (message.DNS?.length) {
+      obj.DNS = message.DNS;
+    }
     if (message.userLevel !== 0) {
       obj.userLevel = Math.round(message.userLevel);
+    }
+    if (message.autoSystemRoutingTable?.length) {
+      obj.autoSystemRoutingTable = message.autoSystemRoutingTable;
+    }
+    if (message.autoOutboundsInterface !== "") {
+      obj.autoOutboundsInterface = message.autoOutboundsInterface;
     }
     return obj;
   },
@@ -111,7 +192,11 @@ export const Config: MessageFns<Config, "xray.proxy.tun.Config"> = {
     const message = createBaseConfig();
     message.name = object.name ?? "";
     message.MTU = object.MTU ?? 0;
+    message.gateway = object.gateway?.map((e) => e) || [];
+    message.DNS = object.DNS?.map((e) => e) || [];
     message.userLevel = object.userLevel ?? 0;
+    message.autoSystemRoutingTable = object.autoSystemRoutingTable?.map((e) => e) || [];
+    message.autoOutboundsInterface = object.autoOutboundsInterface ?? "";
     return message;
   },
 };
