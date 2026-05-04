@@ -98,6 +98,7 @@ export interface Config {
   verifyPeerCertByName: string[];
   echServerKeys: Uint8Array;
   echConfigList: string;
+  /** Deprecated */
   echForceQuery: string;
   echSocketSettings: SocketConfig | undefined;
   pinnedPeerCertSha256: Uint8Array[];

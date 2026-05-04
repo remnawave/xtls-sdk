@@ -6,45 +6,197 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { DomainRule } from "../../common/geodata/geodat";
 import { Endpoint } from "../../common/net/destination";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.dns";
 
-export interface Config {
-  $type: "xray.proxy.dns.Config";
-  /**
-   * Server is the DNS server address. If specified, this address overrides the
-   * original one.
-   */
-  server: Endpoint | undefined;
-  userLevel: number;
-  nonIPQuery: string;
-  blockTypes: number[];
+export enum RuleAction {
+  Direct = 0,
+  Drop = 1,
+  Reject = 2,
+  Hijack = 3,
+  UNRECOGNIZED = -1,
 }
 
+export function ruleActionFromJSON(object: any): RuleAction {
+  switch (object) {
+    case 0:
+    case "Direct":
+      return RuleAction.Direct;
+    case 1:
+    case "Drop":
+      return RuleAction.Drop;
+    case 2:
+    case "Reject":
+      return RuleAction.Reject;
+    case 3:
+    case "Hijack":
+      return RuleAction.Hijack;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RuleAction.UNRECOGNIZED;
+  }
+}
+
+export function ruleActionToJSON(object: RuleAction): string {
+  switch (object) {
+    case RuleAction.Direct:
+      return "Direct";
+    case RuleAction.Drop:
+      return "Drop";
+    case RuleAction.Reject:
+      return "Reject";
+    case RuleAction.Hijack:
+      return "Hijack";
+    case RuleAction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export interface DNSRuleConfig {
+  $type: "xray.proxy.dns.DNSRuleConfig";
+  action: RuleAction;
+  qtype: number[];
+  domain: DomainRule[];
+}
+
+export interface Config {
+  $type: "xray.proxy.dns.Config";
+  userLevel: number;
+  rule: DNSRuleConfig[];
+  server: Endpoint | undefined;
+}
+
+function createBaseDNSRuleConfig(): DNSRuleConfig {
+  return { $type: "xray.proxy.dns.DNSRuleConfig", action: 0, qtype: [], domain: [] };
+}
+
+export const DNSRuleConfig: MessageFns<DNSRuleConfig, "xray.proxy.dns.DNSRuleConfig"> = {
+  $type: "xray.proxy.dns.DNSRuleConfig" as const,
+
+  encode(message: DNSRuleConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.action !== 0) {
+      writer.uint32(8).int32(message.action);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.qtype) {
+      writer.int32(v);
+    }
+    writer.join();
+    for (const v of message.domain) {
+      DomainRule.encode(v!, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DNSRuleConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDNSRuleConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.qtype.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.qtype.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.domain.push(DomainRule.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DNSRuleConfig {
+    return {
+      $type: DNSRuleConfig.$type,
+      action: isSet(object.action) ? ruleActionFromJSON(object.action) : 0,
+      qtype: globalThis.Array.isArray(object?.qtype) ? object.qtype.map((e: any) => globalThis.Number(e)) : [],
+      domain: globalThis.Array.isArray(object?.domain) ? object.domain.map((e: any) => DomainRule.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: DNSRuleConfig): unknown {
+    const obj: any = {};
+    if (message.action !== 0) {
+      obj.action = ruleActionToJSON(message.action);
+    }
+    if (message.qtype?.length) {
+      obj.qtype = message.qtype.map((e) => Math.round(e));
+    }
+    if (message.domain?.length) {
+      obj.domain = message.domain.map((e) => DomainRule.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DNSRuleConfig>): DNSRuleConfig {
+    return DNSRuleConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DNSRuleConfig>): DNSRuleConfig {
+    const message = createBaseDNSRuleConfig();
+    message.action = object.action ?? 0;
+    message.qtype = object.qtype?.map((e) => e) || [];
+    message.domain = object.domain?.map((e) => DomainRule.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+messageTypeRegistry.set(DNSRuleConfig.$type, DNSRuleConfig);
+
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.dns.Config", server: undefined, userLevel: 0, nonIPQuery: "", blockTypes: [] };
+  return { $type: "xray.proxy.dns.Config", userLevel: 0, rule: [], server: undefined };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   $type: "xray.proxy.dns.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.server !== undefined) {
-      Endpoint.encode(message.server, writer.uint32(10).fork()).join();
-    }
     if (message.userLevel !== 0) {
-      writer.uint32(16).uint32(message.userLevel);
+      writer.uint32(8).uint32(message.userLevel);
     }
-    if (message.nonIPQuery !== "") {
-      writer.uint32(26).string(message.nonIPQuery);
+    for (const v of message.rule) {
+      DNSRuleConfig.encode(v!, writer.uint32(18).fork()).join();
     }
-    writer.uint32(34).fork();
-    for (const v of message.blockTypes) {
-      writer.int32(v);
+    if (message.server !== undefined) {
+      Endpoint.encode(message.server, writer.uint32(26).fork()).join();
     }
-    writer.join();
     return writer;
   },
 
@@ -56,19 +208,19 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.server = Endpoint.decode(reader, reader.uint32());
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.userLevel = reader.uint32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.rule.push(DNSRuleConfig.decode(reader, reader.uint32()));
           continue;
         }
         case 3: {
@@ -76,26 +228,8 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
             break;
           }
 
-          message.nonIPQuery = reader.string();
+          message.server = Endpoint.decode(reader, reader.uint32());
           continue;
-        }
-        case 4: {
-          if (tag === 32) {
-            message.blockTypes.push(reader.int32());
-
-            continue;
-          }
-
-          if (tag === 34) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.blockTypes.push(reader.int32());
-            }
-
-            continue;
-          }
-
-          break;
         }
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -109,38 +243,26 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      server: isSet(object.server) ? Endpoint.fromJSON(object.server) : undefined,
       userLevel: isSet(object.userLevel)
         ? globalThis.Number(object.userLevel)
         : isSet(object.user_level)
         ? globalThis.Number(object.user_level)
         : 0,
-      nonIPQuery: isSet(object.nonIPQuery)
-        ? globalThis.String(object.nonIPQuery)
-        : isSet(object.non_IP_query)
-        ? globalThis.String(object.non_IP_query)
-        : "",
-      blockTypes: globalThis.Array.isArray(object?.blockTypes)
-        ? object.blockTypes.map((e: any) => globalThis.Number(e))
-        : globalThis.Array.isArray(object?.block_types)
-        ? object.block_types.map((e: any) => globalThis.Number(e))
-        : [],
+      rule: globalThis.Array.isArray(object?.rule) ? object.rule.map((e: any) => DNSRuleConfig.fromJSON(e)) : [],
+      server: isSet(object.server) ? Endpoint.fromJSON(object.server) : undefined,
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.server !== undefined) {
-      obj.server = Endpoint.toJSON(message.server);
-    }
     if (message.userLevel !== 0) {
       obj.userLevel = Math.round(message.userLevel);
     }
-    if (message.nonIPQuery !== "") {
-      obj.nonIPQuery = message.nonIPQuery;
+    if (message.rule?.length) {
+      obj.rule = message.rule.map((e) => DNSRuleConfig.toJSON(e));
     }
-    if (message.blockTypes?.length) {
-      obj.blockTypes = message.blockTypes.map((e) => Math.round(e));
+    if (message.server !== undefined) {
+      obj.server = Endpoint.toJSON(message.server);
     }
     return obj;
   },
@@ -150,12 +272,11 @@ export const Config: MessageFns<Config, "xray.proxy.dns.Config"> = {
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
+    message.userLevel = object.userLevel ?? 0;
+    message.rule = object.rule?.map((e) => DNSRuleConfig.fromPartial(e)) || [];
     message.server = (object.server !== undefined && object.server !== null)
       ? Endpoint.fromPartial(object.server)
       : undefined;
-    message.userLevel = object.userLevel ?? 0;
-    message.nonIPQuery = object.nonIPQuery ?? "";
-    message.blockTypes = object.blockTypes?.map((e) => e) || [];
     return message;
   },
 };

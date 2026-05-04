@@ -241,8 +241,6 @@ export interface SocketConfig {
    * option. This option is for UDP only.
    */
   receiveOriginalDestAddress: boolean;
-  bindAddress: Uint8Array;
-  bindPort: number;
   acceptProxyProtocol: boolean;
   domainStrategy: DomainStrategy;
   dialerProxy: string;
@@ -1334,8 +1332,6 @@ function createBaseSocketConfig(): SocketConfig {
     tfo: 0,
     tproxy: 0,
     receiveOriginalDestAddress: false,
-    bindAddress: new Uint8Array(0),
-    bindPort: 0,
     acceptProxyProtocol: false,
     domainStrategy: 0,
     dialerProxy: "",
@@ -1371,12 +1367,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     }
     if (message.receiveOriginalDestAddress !== false) {
       writer.uint32(32).bool(message.receiveOriginalDestAddress);
-    }
-    if (message.bindAddress.length !== 0) {
-      writer.uint32(42).bytes(message.bindAddress);
-    }
-    if (message.bindPort !== 0) {
-      writer.uint32(48).uint32(message.bindPort);
     }
     if (message.acceptProxyProtocol !== false) {
       writer.uint32(56).bool(message.acceptProxyProtocol);
@@ -1469,22 +1459,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
           }
 
           message.receiveOriginalDestAddress = reader.bool();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.bindAddress = reader.bytes();
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.bindPort = reader.uint32();
           continue;
         }
         case 7: {
@@ -1643,16 +1617,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
         : isSet(object.receive_original_dest_address)
         ? globalThis.Boolean(object.receive_original_dest_address)
         : false,
-      bindAddress: isSet(object.bindAddress)
-        ? bytesFromBase64(object.bindAddress)
-        : isSet(object.bind_address)
-        ? bytesFromBase64(object.bind_address)
-        : new Uint8Array(0),
-      bindPort: isSet(object.bindPort)
-        ? globalThis.Number(object.bindPort)
-        : isSet(object.bind_port)
-        ? globalThis.Number(object.bind_port)
-        : 0,
       acceptProxyProtocol: isSet(object.acceptProxyProtocol)
         ? globalThis.Boolean(object.acceptProxyProtocol)
         : isSet(object.accept_proxy_protocol)
@@ -1741,12 +1705,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     if (message.receiveOriginalDestAddress !== false) {
       obj.receiveOriginalDestAddress = message.receiveOriginalDestAddress;
     }
-    if (message.bindAddress.length !== 0) {
-      obj.bindAddress = base64FromBytes(message.bindAddress);
-    }
-    if (message.bindPort !== 0) {
-      obj.bindPort = Math.round(message.bindPort);
-    }
     if (message.acceptProxyProtocol !== false) {
       obj.acceptProxyProtocol = message.acceptProxyProtocol;
     }
@@ -1810,8 +1768,6 @@ export const SocketConfig: MessageFns<SocketConfig, "xray.transport.internet.Soc
     message.tfo = object.tfo ?? 0;
     message.tproxy = object.tproxy ?? 0;
     message.receiveOriginalDestAddress = object.receiveOriginalDestAddress ?? false;
-    message.bindAddress = object.bindAddress ?? new Uint8Array(0);
-    message.bindPort = object.bindPort ?? 0;
     message.acceptProxyProtocol = object.acceptProxyProtocol ?? false;
     message.domainStrategy = object.domainStrategy ?? 0;
     message.dialerProxy = object.dialerProxy ?? "";
@@ -1967,31 +1923,6 @@ export const HappyEyeballsConfig: MessageFns<HappyEyeballsConfig, "xray.transpor
 };
 
 messageTypeRegistry.set(HappyEyeballsConfig.$type, HappyEyeballsConfig);
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if ((globalThis as any).Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = globalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if ((globalThis as any).Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(globalThis.String.fromCharCode(byte));
-    });
-    return globalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

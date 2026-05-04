@@ -7,11 +7,46 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { IPRule } from "../../common/geodata/geodat";
+import { Network, networkFromJSON, networkToJSON } from "../../common/net/network";
+import { PortList } from "../../common/net/port";
 import { ServerEndpoint } from "../../common/protocol/server_spec";
 import { DomainStrategy, domainStrategyFromJSON, domainStrategyToJSON } from "../../transport/internet/config";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.freedom";
+
+export enum RuleAction {
+  Allow = 0,
+  Block = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function ruleActionFromJSON(object: any): RuleAction {
+  switch (object) {
+    case 0:
+    case "Allow":
+      return RuleAction.Allow;
+    case 1:
+    case "Block":
+      return RuleAction.Block;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return RuleAction.UNRECOGNIZED;
+  }
+}
+
+export function ruleActionToJSON(object: RuleAction): string {
+  switch (object) {
+    case RuleAction.Allow:
+      return "Allow";
+    case RuleAction.Block:
+      return "Block";
+    case RuleAction.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
 
 export interface DestinationOverride {
   $type: "xray.proxy.freedom.DestinationOverride";
@@ -40,9 +75,19 @@ export interface Noise {
   applyTo: string;
 }
 
-export interface IPRules {
-  $type: "xray.proxy.freedom.IPRules";
-  rules: IPRule[];
+export interface Range {
+  $type: "xray.proxy.freedom.Range";
+  min: number;
+  max: number;
+}
+
+export interface FinalRuleConfig {
+  $type: "xray.proxy.freedom.FinalRuleConfig";
+  action: RuleAction;
+  networks: Network[];
+  portList: PortList | undefined;
+  ip: IPRule[];
+  blockDelay: Range | undefined;
 }
 
 export interface Config {
@@ -53,7 +98,7 @@ export interface Config {
   fragment: Fragment | undefined;
   proxyProtocol: number;
   noises: Noise[];
-  ipsBlocked?: IPRules | undefined;
+  finalRules: FinalRuleConfig[];
 }
 
 function createBaseDestinationOverride(): DestinationOverride {
@@ -515,33 +560,44 @@ export const Noise: MessageFns<Noise, "xray.proxy.freedom.Noise"> = {
 
 messageTypeRegistry.set(Noise.$type, Noise);
 
-function createBaseIPRules(): IPRules {
-  return { $type: "xray.proxy.freedom.IPRules", rules: [] };
+function createBaseRange(): Range {
+  return { $type: "xray.proxy.freedom.Range", min: 0, max: 0 };
 }
 
-export const IPRules: MessageFns<IPRules, "xray.proxy.freedom.IPRules"> = {
-  $type: "xray.proxy.freedom.IPRules" as const,
+export const Range: MessageFns<Range, "xray.proxy.freedom.Range"> = {
+  $type: "xray.proxy.freedom.Range" as const,
 
-  encode(message: IPRules, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.rules) {
-      IPRule.encode(v!, writer.uint32(10).fork()).join();
+  encode(message: Range, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.min !== 0) {
+      writer.uint32(8).uint64(message.min);
+    }
+    if (message.max !== 0) {
+      writer.uint32(16).uint64(message.max);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): IPRules {
+  decode(input: BinaryReader | Uint8Array, length?: number): Range {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseIPRules();
+    const message = createBaseRange();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.rules.push(IPRule.decode(reader, reader.uint32()));
+          message.min = longToNumber(reader.uint64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.max = longToNumber(reader.uint64());
           continue;
         }
       }
@@ -553,32 +609,197 @@ export const IPRules: MessageFns<IPRules, "xray.proxy.freedom.IPRules"> = {
     return message;
   },
 
-  fromJSON(object: any): IPRules {
+  fromJSON(object: any): Range {
     return {
-      $type: IPRules.$type,
-      rules: globalThis.Array.isArray(object?.rules) ? object.rules.map((e: any) => IPRule.fromJSON(e)) : [],
+      $type: Range.$type,
+      min: isSet(object.min) ? globalThis.Number(object.min) : 0,
+      max: isSet(object.max) ? globalThis.Number(object.max) : 0,
     };
   },
 
-  toJSON(message: IPRules): unknown {
+  toJSON(message: Range): unknown {
     const obj: any = {};
-    if (message.rules?.length) {
-      obj.rules = message.rules.map((e) => IPRule.toJSON(e));
+    if (message.min !== 0) {
+      obj.min = Math.round(message.min);
+    }
+    if (message.max !== 0) {
+      obj.max = Math.round(message.max);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<IPRules>): IPRules {
-    return IPRules.fromPartial(base ?? {});
+  create(base?: DeepPartial<Range>): Range {
+    return Range.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<IPRules>): IPRules {
-    const message = createBaseIPRules();
-    message.rules = object.rules?.map((e) => IPRule.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<Range>): Range {
+    const message = createBaseRange();
+    message.min = object.min ?? 0;
+    message.max = object.max ?? 0;
     return message;
   },
 };
 
-messageTypeRegistry.set(IPRules.$type, IPRules);
+messageTypeRegistry.set(Range.$type, Range);
+
+function createBaseFinalRuleConfig(): FinalRuleConfig {
+  return {
+    $type: "xray.proxy.freedom.FinalRuleConfig",
+    action: 0,
+    networks: [],
+    portList: undefined,
+    ip: [],
+    blockDelay: undefined,
+  };
+}
+
+export const FinalRuleConfig: MessageFns<FinalRuleConfig, "xray.proxy.freedom.FinalRuleConfig"> = {
+  $type: "xray.proxy.freedom.FinalRuleConfig" as const,
+
+  encode(message: FinalRuleConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.action !== 0) {
+      writer.uint32(8).int32(message.action);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.networks) {
+      writer.int32(v);
+    }
+    writer.join();
+    if (message.portList !== undefined) {
+      PortList.encode(message.portList, writer.uint32(26).fork()).join();
+    }
+    for (const v of message.ip) {
+      IPRule.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.blockDelay !== undefined) {
+      Range.encode(message.blockDelay, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FinalRuleConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFinalRuleConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.action = reader.int32() as any;
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.networks.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.networks.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.portList = PortList.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.ip.push(IPRule.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.blockDelay = Range.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FinalRuleConfig {
+    return {
+      $type: FinalRuleConfig.$type,
+      action: isSet(object.action) ? ruleActionFromJSON(object.action) : 0,
+      networks: globalThis.Array.isArray(object?.networks) ? object.networks.map((e: any) => networkFromJSON(e)) : [],
+      portList: isSet(object.portList)
+        ? PortList.fromJSON(object.portList)
+        : isSet(object.port_list)
+        ? PortList.fromJSON(object.port_list)
+        : undefined,
+      ip: globalThis.Array.isArray(object?.ip) ? object.ip.map((e: any) => IPRule.fromJSON(e)) : [],
+      blockDelay: isSet(object.blockDelay)
+        ? Range.fromJSON(object.blockDelay)
+        : isSet(object.block_delay)
+        ? Range.fromJSON(object.block_delay)
+        : undefined,
+    };
+  },
+
+  toJSON(message: FinalRuleConfig): unknown {
+    const obj: any = {};
+    if (message.action !== 0) {
+      obj.action = ruleActionToJSON(message.action);
+    }
+    if (message.networks?.length) {
+      obj.networks = message.networks.map((e) => networkToJSON(e));
+    }
+    if (message.portList !== undefined) {
+      obj.portList = PortList.toJSON(message.portList);
+    }
+    if (message.ip?.length) {
+      obj.ip = message.ip.map((e) => IPRule.toJSON(e));
+    }
+    if (message.blockDelay !== undefined) {
+      obj.blockDelay = Range.toJSON(message.blockDelay);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<FinalRuleConfig>): FinalRuleConfig {
+    return FinalRuleConfig.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<FinalRuleConfig>): FinalRuleConfig {
+    const message = createBaseFinalRuleConfig();
+    message.action = object.action ?? 0;
+    message.networks = object.networks?.map((e) => e) || [];
+    message.portList = (object.portList !== undefined && object.portList !== null)
+      ? PortList.fromPartial(object.portList)
+      : undefined;
+    message.ip = object.ip?.map((e) => IPRule.fromPartial(e)) || [];
+    message.blockDelay = (object.blockDelay !== undefined && object.blockDelay !== null)
+      ? Range.fromPartial(object.blockDelay)
+      : undefined;
+    return message;
+  },
+};
+
+messageTypeRegistry.set(FinalRuleConfig.$type, FinalRuleConfig);
 
 function createBaseConfig(): Config {
   return {
@@ -589,7 +810,7 @@ function createBaseConfig(): Config {
     fragment: undefined,
     proxyProtocol: 0,
     noises: [],
-    ipsBlocked: undefined,
+    finalRules: [],
   };
 }
 
@@ -615,8 +836,8 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     for (const v of message.noises) {
       Noise.encode(v!, writer.uint32(58).fork()).join();
     }
-    if (message.ipsBlocked !== undefined) {
-      IPRules.encode(message.ipsBlocked, writer.uint32(66).fork()).join();
+    for (const v of message.finalRules) {
+      FinalRuleConfig.encode(v!, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -681,7 +902,7 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
             break;
           }
 
-          message.ipsBlocked = IPRules.decode(reader, reader.uint32());
+          message.finalRules.push(FinalRuleConfig.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -718,11 +939,11 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
         ? globalThis.Number(object.proxy_protocol)
         : 0,
       noises: globalThis.Array.isArray(object?.noises) ? object.noises.map((e: any) => Noise.fromJSON(e)) : [],
-      ipsBlocked: isSet(object.ipsBlocked)
-        ? IPRules.fromJSON(object.ipsBlocked)
-        : isSet(object.ips_blocked)
-        ? IPRules.fromJSON(object.ips_blocked)
-        : undefined,
+      finalRules: globalThis.Array.isArray(object?.finalRules)
+        ? object.finalRules.map((e: any) => FinalRuleConfig.fromJSON(e))
+        : globalThis.Array.isArray(object?.final_rules)
+        ? object.final_rules.map((e: any) => FinalRuleConfig.fromJSON(e))
+        : [],
     };
   },
 
@@ -746,8 +967,8 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
     if (message.noises?.length) {
       obj.noises = message.noises.map((e) => Noise.toJSON(e));
     }
-    if (message.ipsBlocked !== undefined) {
-      obj.ipsBlocked = IPRules.toJSON(message.ipsBlocked);
+    if (message.finalRules?.length) {
+      obj.finalRules = message.finalRules.map((e) => FinalRuleConfig.toJSON(e));
     }
     return obj;
   },
@@ -767,9 +988,7 @@ export const Config: MessageFns<Config, "xray.proxy.freedom.Config"> = {
       : undefined;
     message.proxyProtocol = object.proxyProtocol ?? 0;
     message.noises = object.noises?.map((e) => Noise.fromPartial(e)) || [];
-    message.ipsBlocked = (object.ipsBlocked !== undefined && object.ipsBlocked !== null)
-      ? IPRules.fromPartial(object.ipsBlocked)
-      : undefined;
+    message.finalRules = object.finalRules?.map((e) => FinalRuleConfig.fromPartial(e)) || [];
     return message;
   },
 };
