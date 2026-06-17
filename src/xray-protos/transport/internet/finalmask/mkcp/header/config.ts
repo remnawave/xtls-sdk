@@ -2,33 +2,33 @@
 // versions:
 //   protoc-gen-ts_proto  v2.11.8
 //   protoc               v6.33.4
-// source: transport/internet/finalmask/xdns/config.proto
+// source: transport/internet/finalmask/mkcp/header/config.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { messageTypeRegistry } from "../../../../typeRegistry";
+import { messageTypeRegistry } from "../../../../../typeRegistry";
 
-export const protobufPackage = "xray.transport.internet.finalmask.xdns";
+export const protobufPackage = "xray.transport.internet.finalmask.mkcp.header";
 
 export interface Config {
-  $type: "xray.transport.internet.finalmask.xdns.Config";
-  domains: string[];
-  resolvers: string[];
+  $type: "xray.transport.internet.finalmask.mkcp.header.Config";
+  ID: number;
+  domain: string;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.transport.internet.finalmask.xdns.Config", domains: [], resolvers: [] };
+  return { $type: "xray.transport.internet.finalmask.mkcp.header.Config", ID: 0, domain: "" };
 }
 
-export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.Config"> = {
-  $type: "xray.transport.internet.finalmask.xdns.Config" as const,
+export const Config: MessageFns<Config, "xray.transport.internet.finalmask.mkcp.header.Config"> = {
+  $type: "xray.transport.internet.finalmask.mkcp.header.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.domains) {
-      writer.uint32(10).string(v!);
+    if (message.ID !== 0) {
+      writer.uint32(8).int32(message.ID);
     }
-    for (const v of message.resolvers) {
-      writer.uint32(18).string(v!);
+    if (message.domain !== "") {
+      writer.uint32(18).string(message.domain);
     }
     return writer;
   },
@@ -41,11 +41,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
             break;
           }
 
-          message.domains.push(reader.string());
+          message.ID = reader.int32();
           continue;
         }
         case 2: {
@@ -53,7 +53,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
             break;
           }
 
-          message.resolvers.push(reader.string());
+          message.domain = reader.string();
           continue;
         }
       }
@@ -68,20 +68,18 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      domains: globalThis.Array.isArray(object?.domains) ? object.domains.map((e: any) => globalThis.String(e)) : [],
-      resolvers: globalThis.Array.isArray(object?.resolvers)
-        ? object.resolvers.map((e: any) => globalThis.String(e))
-        : [],
+      ID: isSet(object.ID) ? globalThis.Number(object.ID) : 0,
+      domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
     };
   },
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.domains?.length) {
-      obj.domains = message.domains;
+    if (message.ID !== 0) {
+      obj.ID = Math.round(message.ID);
     }
-    if (message.resolvers?.length) {
-      obj.resolvers = message.resolvers;
+    if (message.domain !== "") {
+      obj.domain = message.domain;
     }
     return obj;
   },
@@ -91,8 +89,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.xdns.
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.domains = object.domains?.map((e) => e) || [];
-    message.resolvers = object.resolvers?.map((e) => e) || [];
+    message.ID = object.ID ?? 0;
+    message.domain = object.domain ?? "";
     return message;
   },
 };
@@ -106,6 +104,10 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in Exclude<keyof T, "$type">]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
 
 export interface MessageFns<T, V extends string> {
   readonly $type: V;
