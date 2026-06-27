@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { SniffingConfig } from "../../app/proxyman/config";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.loopback";
@@ -13,10 +14,11 @@ export const protobufPackage = "xray.proxy.loopback";
 export interface Config {
   $type: "xray.proxy.loopback.Config";
   inboundTag: string;
+  sniffing: SniffingConfig | undefined;
 }
 
 function createBaseConfig(): Config {
-  return { $type: "xray.proxy.loopback.Config", inboundTag: "" };
+  return { $type: "xray.proxy.loopback.Config", inboundTag: "", sniffing: undefined };
 }
 
 export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
@@ -25,6 +27,9 @@ export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.inboundTag !== "") {
       writer.uint32(10).string(message.inboundTag);
+    }
+    if (message.sniffing !== undefined) {
+      SniffingConfig.encode(message.sniffing, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -44,6 +49,14 @@ export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
           message.inboundTag = reader.string();
           continue;
         }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.sniffing = SniffingConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -61,6 +74,7 @@ export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
         : isSet(object.inbound_tag)
         ? globalThis.String(object.inbound_tag)
         : "",
+      sniffing: isSet(object.sniffing) ? SniffingConfig.fromJSON(object.sniffing) : undefined,
     };
   },
 
@@ -68,6 +82,9 @@ export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
     const obj: any = {};
     if (message.inboundTag !== "") {
       obj.inboundTag = message.inboundTag;
+    }
+    if (message.sniffing !== undefined) {
+      obj.sniffing = SniffingConfig.toJSON(message.sniffing);
     }
     return obj;
   },
@@ -78,6 +95,9 @@ export const Config: MessageFns<Config, "xray.proxy.loopback.Config"> = {
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
     message.inboundTag = object.inboundTag ?? "";
+    message.sniffing = (object.sniffing !== undefined && object.sniffing !== null)
+      ? SniffingConfig.fromPartial(object.sniffing)
+      : undefined;
     return message;
   },
 };

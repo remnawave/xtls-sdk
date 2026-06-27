@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { User } from "../../common/protocol/user";
 import { messageTypeRegistry } from "../../typeRegistry";
 
 export const protobufPackage = "xray.proxy.wireguard";
@@ -15,7 +16,7 @@ export interface PeerConfig {
   publicKey: string;
   preSharedKey: string;
   endpoint: string;
-  keepAlive: number;
+  keepAlive: string;
   allowedIps: string[];
 }
 
@@ -24,8 +25,8 @@ export interface DeviceConfig {
   secretKey: string;
   endpoint: string[];
   peers: PeerConfig[];
+  users: User[];
   mtu: number;
-  numWorkers: number;
   reserved: Uint8Array;
   domainStrategy: DeviceConfig_DomainStrategy;
   isClient: boolean;
@@ -89,7 +90,7 @@ function createBasePeerConfig(): PeerConfig {
     publicKey: "",
     preSharedKey: "",
     endpoint: "",
-    keepAlive: 0,
+    keepAlive: "",
     allowedIps: [],
   };
 }
@@ -107,8 +108,8 @@ export const PeerConfig: MessageFns<PeerConfig, "xray.proxy.wireguard.PeerConfig
     if (message.endpoint !== "") {
       writer.uint32(26).string(message.endpoint);
     }
-    if (message.keepAlive !== 0) {
-      writer.uint32(32).uint32(message.keepAlive);
+    if (message.keepAlive !== "") {
+      writer.uint32(34).string(message.keepAlive);
     }
     for (const v of message.allowedIps) {
       writer.uint32(42).string(v!);
@@ -148,11 +149,11 @@ export const PeerConfig: MessageFns<PeerConfig, "xray.proxy.wireguard.PeerConfig
           continue;
         }
         case 4: {
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.keepAlive = reader.uint32();
+          message.keepAlive = reader.string();
           continue;
         }
         case 5: {
@@ -187,10 +188,10 @@ export const PeerConfig: MessageFns<PeerConfig, "xray.proxy.wireguard.PeerConfig
         : "",
       endpoint: isSet(object.endpoint) ? globalThis.String(object.endpoint) : "",
       keepAlive: isSet(object.keepAlive)
-        ? globalThis.Number(object.keepAlive)
+        ? globalThis.String(object.keepAlive)
         : isSet(object.keep_alive)
-        ? globalThis.Number(object.keep_alive)
-        : 0,
+        ? globalThis.String(object.keep_alive)
+        : "",
       allowedIps: globalThis.Array.isArray(object?.allowedIps)
         ? object.allowedIps.map((e: any) => globalThis.String(e))
         : globalThis.Array.isArray(object?.allowed_ips)
@@ -210,8 +211,8 @@ export const PeerConfig: MessageFns<PeerConfig, "xray.proxy.wireguard.PeerConfig
     if (message.endpoint !== "") {
       obj.endpoint = message.endpoint;
     }
-    if (message.keepAlive !== 0) {
-      obj.keepAlive = Math.round(message.keepAlive);
+    if (message.keepAlive !== "") {
+      obj.keepAlive = message.keepAlive;
     }
     if (message.allowedIps?.length) {
       obj.allowedIps = message.allowedIps;
@@ -227,7 +228,7 @@ export const PeerConfig: MessageFns<PeerConfig, "xray.proxy.wireguard.PeerConfig
     message.publicKey = object.publicKey ?? "";
     message.preSharedKey = object.preSharedKey ?? "";
     message.endpoint = object.endpoint ?? "";
-    message.keepAlive = object.keepAlive ?? 0;
+    message.keepAlive = object.keepAlive ?? "";
     message.allowedIps = object.allowedIps?.map((e) => e) || [];
     return message;
   },
@@ -241,8 +242,8 @@ function createBaseDeviceConfig(): DeviceConfig {
     secretKey: "",
     endpoint: [],
     peers: [],
+    users: [],
     mtu: 0,
-    numWorkers: 0,
     reserved: new Uint8Array(0),
     domainStrategy: 0,
     isClient: false,
@@ -263,11 +264,11 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     for (const v of message.peers) {
       PeerConfig.encode(v!, writer.uint32(26).fork()).join();
     }
+    for (const v of message.users) {
+      User.encode(v!, writer.uint32(42).fork()).join();
+    }
     if (message.mtu !== 0) {
       writer.uint32(32).int32(message.mtu);
-    }
-    if (message.numWorkers !== 0) {
-      writer.uint32(40).int32(message.numWorkers);
     }
     if (message.reserved.length !== 0) {
       writer.uint32(50).bytes(message.reserved);
@@ -315,20 +316,20 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
           message.peers.push(PeerConfig.decode(reader, reader.uint32()));
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.users.push(User.decode(reader, reader.uint32()));
+          continue;
+        }
         case 4: {
           if (tag !== 32) {
             break;
           }
 
           message.mtu = reader.int32();
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.numWorkers = reader.int32();
           continue;
         }
         case 6: {
@@ -382,12 +383,8 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
         : "",
       endpoint: globalThis.Array.isArray(object?.endpoint) ? object.endpoint.map((e: any) => globalThis.String(e)) : [],
       peers: globalThis.Array.isArray(object?.peers) ? object.peers.map((e: any) => PeerConfig.fromJSON(e)) : [],
+      users: globalThis.Array.isArray(object?.users) ? object.users.map((e: any) => User.fromJSON(e)) : [],
       mtu: isSet(object.mtu) ? globalThis.Number(object.mtu) : 0,
-      numWorkers: isSet(object.numWorkers)
-        ? globalThis.Number(object.numWorkers)
-        : isSet(object.num_workers)
-        ? globalThis.Number(object.num_workers)
-        : 0,
       reserved: isSet(object.reserved) ? bytesFromBase64(object.reserved) : new Uint8Array(0),
       domainStrategy: isSet(object.domainStrategy)
         ? deviceConfig_DomainStrategyFromJSON(object.domainStrategy)
@@ -418,11 +415,11 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     if (message.peers?.length) {
       obj.peers = message.peers.map((e) => PeerConfig.toJSON(e));
     }
+    if (message.users?.length) {
+      obj.users = message.users.map((e) => User.toJSON(e));
+    }
     if (message.mtu !== 0) {
       obj.mtu = Math.round(message.mtu);
-    }
-    if (message.numWorkers !== 0) {
-      obj.numWorkers = Math.round(message.numWorkers);
     }
     if (message.reserved.length !== 0) {
       obj.reserved = base64FromBytes(message.reserved);
@@ -447,8 +444,8 @@ export const DeviceConfig: MessageFns<DeviceConfig, "xray.proxy.wireguard.Device
     message.secretKey = object.secretKey ?? "";
     message.endpoint = object.endpoint?.map((e) => e) || [];
     message.peers = object.peers?.map((e) => PeerConfig.fromPartial(e)) || [];
+    message.users = object.users?.map((e) => User.fromPartial(e)) || [];
     message.mtu = object.mtu ?? 0;
-    message.numWorkers = object.numWorkers ?? 0;
     message.reserved = object.reserved ?? new Uint8Array(0);
     message.domainStrategy = object.domainStrategy ?? 0;
     message.isClient = object.isClient ?? false;

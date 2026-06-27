@@ -67,9 +67,9 @@ export function certificate_UsageToJSON(object: Certificate_Usage): string {
   }
 }
 
+/** Number 1 was assigned and used by an legacy option. */
 export interface Config {
   $type: "xray.transport.internet.tls.Config";
-  allowInsecure: boolean;
   /** List of certificates to be served on server. */
   certificate: Certificate[];
   /** Override server name. */
@@ -98,8 +98,6 @@ export interface Config {
   verifyPeerCertByName: string[];
   echServerKeys: Uint8Array;
   echConfigList: string;
-  /** Deprecated */
-  echForceQuery: string;
   echSocketSettings: SocketConfig | undefined;
   pinnedPeerCertSha256: Uint8Array[];
 }
@@ -314,7 +312,6 @@ messageTypeRegistry.set(Certificate.$type, Certificate);
 function createBaseConfig(): Config {
   return {
     $type: "xray.transport.internet.tls.Config",
-    allowInsecure: false,
     certificate: [],
     serverName: "",
     nextProtocol: [],
@@ -330,7 +327,6 @@ function createBaseConfig(): Config {
     verifyPeerCertByName: [],
     echServerKeys: new Uint8Array(0),
     echConfigList: "",
-    echForceQuery: "",
     echSocketSettings: undefined,
     pinnedPeerCertSha256: [],
   };
@@ -340,9 +336,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
   $type: "xray.transport.internet.tls.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.allowInsecure !== false) {
-      writer.uint32(8).bool(message.allowInsecure);
-    }
     for (const v of message.certificate) {
       Certificate.encode(v!, writer.uint32(18).fork()).join();
     }
@@ -388,9 +381,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     if (message.echConfigList !== "") {
       writer.uint32(154).string(message.echConfigList);
     }
-    if (message.echForceQuery !== "") {
-      writer.uint32(162).string(message.echForceQuery);
-    }
     if (message.echSocketSettings !== undefined) {
       SocketConfig.encode(message.echSocketSettings, writer.uint32(170).fork()).join();
     }
@@ -407,14 +397,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.allowInsecure = reader.bool();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -535,14 +517,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
           message.echConfigList = reader.string();
           continue;
         }
-        case 20: {
-          if (tag !== 162) {
-            break;
-          }
-
-          message.echForceQuery = reader.string();
-          continue;
-        }
         case 21: {
           if (tag !== 170) {
             break;
@@ -571,11 +545,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      allowInsecure: isSet(object.allowInsecure)
-        ? globalThis.Boolean(object.allowInsecure)
-        : isSet(object.allow_insecure)
-        ? globalThis.Boolean(object.allow_insecure)
-        : false,
       certificate: globalThis.Array.isArray(object?.certificate)
         ? object.certificate.map((e: any) => Certificate.fromJSON(e))
         : [],
@@ -645,11 +614,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
         : isSet(object.ech_config_list)
         ? globalThis.String(object.ech_config_list)
         : "",
-      echForceQuery: isSet(object.echForceQuery)
-        ? globalThis.String(object.echForceQuery)
-        : isSet(object.ech_force_query)
-        ? globalThis.String(object.ech_force_query)
-        : "",
       echSocketSettings: isSet(object.echSocketSettings)
         ? SocketConfig.fromJSON(object.echSocketSettings)
         : isSet(object.ech_socket_settings)
@@ -665,9 +629,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.allowInsecure !== false) {
-      obj.allowInsecure = message.allowInsecure;
-    }
     if (message.certificate?.length) {
       obj.certificate = message.certificate.map((e) => Certificate.toJSON(e));
     }
@@ -713,9 +674,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     if (message.echConfigList !== "") {
       obj.echConfigList = message.echConfigList;
     }
-    if (message.echForceQuery !== "") {
-      obj.echForceQuery = message.echForceQuery;
-    }
     if (message.echSocketSettings !== undefined) {
       obj.echSocketSettings = SocketConfig.toJSON(message.echSocketSettings);
     }
@@ -730,7 +688,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.allowInsecure = object.allowInsecure ?? false;
     message.certificate = object.certificate?.map((e) => Certificate.fromPartial(e)) || [];
     message.serverName = object.serverName ?? "";
     message.nextProtocol = object.nextProtocol?.map((e) => e) || [];
@@ -746,7 +703,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.tls.Config"> = 
     message.verifyPeerCertByName = object.verifyPeerCertByName?.map((e) => e) || [];
     message.echServerKeys = object.echServerKeys ?? new Uint8Array(0);
     message.echConfigList = object.echConfigList ?? "";
-    message.echForceQuery = object.echForceQuery ?? "";
     message.echSocketSettings = (object.echSocketSettings !== undefined && object.echSocketSettings !== null)
       ? SocketConfig.fromPartial(object.echSocketSettings)
       : undefined;

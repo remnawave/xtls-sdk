@@ -14,12 +14,12 @@ export interface Config {
   $type: "xray.transport.internet.finalmask.fragment.Config";
   packetsFrom: number;
   packetsTo: number;
-  lengthMin: number;
-  lengthMax: number;
-  delayMin: number;
-  delayMax: number;
   maxSplitMin: number;
   maxSplitMax: number;
+  lengthsMin: number[];
+  lengthsMax: number[];
+  delaysMin: number[];
+  delaysMax: number[];
 }
 
 function createBaseConfig(): Config {
@@ -27,12 +27,12 @@ function createBaseConfig(): Config {
     $type: "xray.transport.internet.finalmask.fragment.Config",
     packetsFrom: 0,
     packetsTo: 0,
-    lengthMin: 0,
-    lengthMax: 0,
-    delayMin: 0,
-    delayMax: 0,
     maxSplitMin: 0,
     maxSplitMax: 0,
+    lengthsMin: [],
+    lengthsMax: [],
+    delaysMin: [],
+    delaysMax: [],
   };
 }
 
@@ -46,24 +46,32 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
     if (message.packetsTo !== 0) {
       writer.uint32(16).int64(message.packetsTo);
     }
-    if (message.lengthMin !== 0) {
-      writer.uint32(24).int64(message.lengthMin);
-    }
-    if (message.lengthMax !== 0) {
-      writer.uint32(32).int64(message.lengthMax);
-    }
-    if (message.delayMin !== 0) {
-      writer.uint32(40).int64(message.delayMin);
-    }
-    if (message.delayMax !== 0) {
-      writer.uint32(48).int64(message.delayMax);
-    }
     if (message.maxSplitMin !== 0) {
       writer.uint32(56).int64(message.maxSplitMin);
     }
     if (message.maxSplitMax !== 0) {
       writer.uint32(64).int64(message.maxSplitMax);
     }
+    writer.uint32(74).fork();
+    for (const v of message.lengthsMin) {
+      writer.int64(v);
+    }
+    writer.join();
+    writer.uint32(82).fork();
+    for (const v of message.lengthsMax) {
+      writer.int64(v);
+    }
+    writer.join();
+    writer.uint32(90).fork();
+    for (const v of message.delaysMin) {
+      writer.int64(v);
+    }
+    writer.join();
+    writer.uint32(98).fork();
+    for (const v of message.delaysMax) {
+      writer.int64(v);
+    }
+    writer.join();
     return writer;
   },
 
@@ -90,38 +98,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
           message.packetsTo = longToNumber(reader.int64());
           continue;
         }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.lengthMin = longToNumber(reader.int64());
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.lengthMax = longToNumber(reader.int64());
-          continue;
-        }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.delayMin = longToNumber(reader.int64());
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.delayMax = longToNumber(reader.int64());
-          continue;
-        }
         case 7: {
           if (tag !== 56) {
             break;
@@ -137,6 +113,78 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
 
           message.maxSplitMax = longToNumber(reader.int64());
           continue;
+        }
+        case 9: {
+          if (tag === 72) {
+            message.lengthsMin.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 74) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.lengthsMin.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 10: {
+          if (tag === 80) {
+            message.lengthsMax.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 82) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.lengthsMax.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 11: {
+          if (tag === 88) {
+            message.delaysMin.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 90) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.delaysMin.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 12: {
+          if (tag === 96) {
+            message.delaysMax.push(longToNumber(reader.int64()));
+
+            continue;
+          }
+
+          if (tag === 98) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.delaysMax.push(longToNumber(reader.int64()));
+            }
+
+            continue;
+          }
+
+          break;
         }
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -160,26 +208,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
         : isSet(object.packets_to)
         ? globalThis.Number(object.packets_to)
         : 0,
-      lengthMin: isSet(object.lengthMin)
-        ? globalThis.Number(object.lengthMin)
-        : isSet(object.length_min)
-        ? globalThis.Number(object.length_min)
-        : 0,
-      lengthMax: isSet(object.lengthMax)
-        ? globalThis.Number(object.lengthMax)
-        : isSet(object.length_max)
-        ? globalThis.Number(object.length_max)
-        : 0,
-      delayMin: isSet(object.delayMin)
-        ? globalThis.Number(object.delayMin)
-        : isSet(object.delay_min)
-        ? globalThis.Number(object.delay_min)
-        : 0,
-      delayMax: isSet(object.delayMax)
-        ? globalThis.Number(object.delayMax)
-        : isSet(object.delay_max)
-        ? globalThis.Number(object.delay_max)
-        : 0,
       maxSplitMin: isSet(object.maxSplitMin)
         ? globalThis.Number(object.maxSplitMin)
         : isSet(object.max_split_min)
@@ -190,6 +218,26 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
         : isSet(object.max_split_max)
         ? globalThis.Number(object.max_split_max)
         : 0,
+      lengthsMin: globalThis.Array.isArray(object?.lengthsMin)
+        ? object.lengthsMin.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.lengths_min)
+        ? object.lengths_min.map((e: any) => globalThis.Number(e))
+        : [],
+      lengthsMax: globalThis.Array.isArray(object?.lengthsMax)
+        ? object.lengthsMax.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.lengths_max)
+        ? object.lengths_max.map((e: any) => globalThis.Number(e))
+        : [],
+      delaysMin: globalThis.Array.isArray(object?.delaysMin)
+        ? object.delaysMin.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.delays_min)
+        ? object.delays_min.map((e: any) => globalThis.Number(e))
+        : [],
+      delaysMax: globalThis.Array.isArray(object?.delaysMax)
+        ? object.delaysMax.map((e: any) => globalThis.Number(e))
+        : globalThis.Array.isArray(object?.delays_max)
+        ? object.delays_max.map((e: any) => globalThis.Number(e))
+        : [],
     };
   },
 
@@ -201,23 +249,23 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
     if (message.packetsTo !== 0) {
       obj.packetsTo = Math.round(message.packetsTo);
     }
-    if (message.lengthMin !== 0) {
-      obj.lengthMin = Math.round(message.lengthMin);
-    }
-    if (message.lengthMax !== 0) {
-      obj.lengthMax = Math.round(message.lengthMax);
-    }
-    if (message.delayMin !== 0) {
-      obj.delayMin = Math.round(message.delayMin);
-    }
-    if (message.delayMax !== 0) {
-      obj.delayMax = Math.round(message.delayMax);
-    }
     if (message.maxSplitMin !== 0) {
       obj.maxSplitMin = Math.round(message.maxSplitMin);
     }
     if (message.maxSplitMax !== 0) {
       obj.maxSplitMax = Math.round(message.maxSplitMax);
+    }
+    if (message.lengthsMin?.length) {
+      obj.lengthsMin = message.lengthsMin.map((e) => Math.round(e));
+    }
+    if (message.lengthsMax?.length) {
+      obj.lengthsMax = message.lengthsMax.map((e) => Math.round(e));
+    }
+    if (message.delaysMin?.length) {
+      obj.delaysMin = message.delaysMin.map((e) => Math.round(e));
+    }
+    if (message.delaysMax?.length) {
+      obj.delaysMax = message.delaysMax.map((e) => Math.round(e));
     }
     return obj;
   },
@@ -229,12 +277,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.finalmask.fragm
     const message = createBaseConfig();
     message.packetsFrom = object.packetsFrom ?? 0;
     message.packetsTo = object.packetsTo ?? 0;
-    message.lengthMin = object.lengthMin ?? 0;
-    message.lengthMax = object.lengthMax ?? 0;
-    message.delayMin = object.delayMin ?? 0;
-    message.delayMax = object.delayMax ?? 0;
     message.maxSplitMin = object.maxSplitMin ?? 0;
     message.maxSplitMax = object.maxSplitMax ?? 0;
+    message.lengthsMin = object.lengthsMin?.map((e) => e) || [];
+    message.lengthsMax = object.lengthsMax?.map((e) => e) || [];
+    message.delaysMin = object.delaysMin?.map((e) => e) || [];
+    message.delaysMax = object.delaysMax?.map((e) => e) || [];
     return message;
   },
 };

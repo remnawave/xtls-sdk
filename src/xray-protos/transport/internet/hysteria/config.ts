@@ -12,7 +12,6 @@ export const protobufPackage = "xray.transport.internet.hysteria";
 
 export interface Config {
   $type: "xray.transport.internet.hysteria.Config";
-  version: number;
   auth: string;
   udpIdleTimeout: number;
   masqType: string;
@@ -34,7 +33,6 @@ export interface Config_MasqStringHeadersEntry {
 function createBaseConfig(): Config {
   return {
     $type: "xray.transport.internet.hysteria.Config",
-    version: 0,
     auth: "",
     udpIdleTimeout: 0,
     masqType: "",
@@ -52,9 +50,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
   $type: "xray.transport.internet.hysteria.Config" as const,
 
   encode(message: Config, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.version !== 0) {
-      writer.uint32(8).int32(message.version);
-    }
     if (message.auth !== "") {
       writer.uint32(18).string(message.auth);
     }
@@ -99,14 +94,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.version = reader.int32();
-          continue;
-        }
         case 2: {
           if (tag !== 18) {
             break;
@@ -202,7 +189,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
   fromJSON(object: any): Config {
     return {
       $type: Config.$type,
-      version: isSet(object.version) ? globalThis.Number(object.version) : 0,
       auth: isSet(object.auth) ? globalThis.String(object.auth) : "",
       udpIdleTimeout: isSet(object.udpIdleTimeout)
         ? globalThis.Number(object.udpIdleTimeout)
@@ -266,9 +252,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
 
   toJSON(message: Config): unknown {
     const obj: any = {};
-    if (message.version !== 0) {
-      obj.version = Math.round(message.version);
-    }
     if (message.auth !== "") {
       obj.auth = message.auth;
     }
@@ -313,7 +296,6 @@ export const Config: MessageFns<Config, "xray.transport.internet.hysteria.Config
   },
   fromPartial(object: DeepPartial<Config>): Config {
     const message = createBaseConfig();
-    message.version = object.version ?? 0;
     message.auth = object.auth ?? "";
     message.udpIdleTimeout = object.udpIdleTimeout ?? 0;
     message.masqType = object.masqType ?? "";

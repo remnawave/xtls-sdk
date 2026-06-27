@@ -1,63 +1,56 @@
 {
   "name": "@remnawave/xtls-sdk",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "A Typescript SDK for XRAY (XTLS) Core GRPC Api",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "files": [
-    "build/**/*"
+  "keywords": [
+    "api",
+    "client",
+    "grpc",
+    "network",
+    "protocol",
+    "proxy",
+    "sdk",
+    "trojan",
+    "typescript",
+    "vless",
+    "xray",
+    "xray core api",
+    "xray-core",
+    "xtls"
   ],
-  "scripts": {
-    "prepublish": "rm -rf build && tsc",
-    "build": "tsc"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/remnawave/xtls-sdk.git"
-  },
   "homepage": "https://github.com/remnawave/xtls-sdk#readme",
   "bugs": {
     "url": "https://github.com/remnawave/xtls-sdk/issues"
   },
-  "author": "Remnawave <https://github.com/remnawave>",
   "license": "AGPL-3.0-only",
-  "keywords": [
-    "xtls",
-    "grpc",
-    "sdk",
-    "xray core api",
-    "typescript",
-    "xray",
-    "xray-core",
-    "api",
-    "client",
-    "network",
-    "proxy",
-    "protocol",
-    "trojan",
-    "vless"
+  "author": "Remnawave <https://github.com/remnawave>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remnawave/xtls-sdk.git"
+  },
+  "files": [
+    "build/**/*"
   ],
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "prepublish": "rm -rf build && tsc",
+    "build": "tsc"
+  },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.12.1",
     "long": "^5.3.2",
     "nice-grpc": "^2.1.16",
-    "protobufjs": "^8.6.4",
-    "@bufbuild/protobuf": "^2.12.0"
+    "protobufjs": "^8.6.5"
   },
   "devDependencies": {
-    "tar": "^7.5.16",
-    "@types/node": "^24.10.2",
+    "@types/node": ">= 24 < 25",
+    "eslint-plugin-perfectionist": "5.9.1",
     "grpc-tools": "^1.13.1",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "tar": "^7.5.17",
     "ts-proto": "^2.11.8",
-    "typescript": "~5.9.3",
-    "@typescript-eslint/eslint-plugin": "^8.49.0",
-    "@typescript-eslint/parser": "^8.49.0",
-    "eslint": "9.39.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-paths": "^1.1.0",
-    "eslint-plugin-perfectionist": "^4.15.1",
-    "eslint-plugin-prettier": "^5.5.4",
-    "prettier": "^3.7.4",
-    "tsconfig-paths": "^4.2.0",
-    "typescript-eslint": "^8.49.0"
+    "typescript": "~5.9.3"
   }
 }

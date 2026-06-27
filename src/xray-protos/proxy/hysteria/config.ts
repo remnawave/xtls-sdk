@@ -14,7 +14,6 @@ export const protobufPackage = "xray.proxy.hysteria";
 
 export interface ClientConfig {
   $type: "xray.proxy.hysteria.ClientConfig";
-  version: number;
   server: ServerEndpoint | undefined;
 }
 
@@ -24,18 +23,15 @@ export interface ServerConfig {
 }
 
 function createBaseClientConfig(): ClientConfig {
-  return { $type: "xray.proxy.hysteria.ClientConfig", version: 0, server: undefined };
+  return { $type: "xray.proxy.hysteria.ClientConfig", server: undefined };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.hysteria.ClientConfig"> = {
   $type: "xray.proxy.hysteria.ClientConfig" as const,
 
   encode(message: ClientConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.version !== 0) {
-      writer.uint32(8).int32(message.version);
-    }
     if (message.server !== undefined) {
-      ServerEndpoint.encode(message.server, writer.uint32(18).fork()).join();
+      ServerEndpoint.encode(message.server, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -48,15 +44,7 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.hysteria.ClientC
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.version = reader.int32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
+          if (tag !== 10) {
             break;
           }
 
@@ -75,16 +63,12 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.hysteria.ClientC
   fromJSON(object: any): ClientConfig {
     return {
       $type: ClientConfig.$type,
-      version: isSet(object.version) ? globalThis.Number(object.version) : 0,
       server: isSet(object.server) ? ServerEndpoint.fromJSON(object.server) : undefined,
     };
   },
 
   toJSON(message: ClientConfig): unknown {
     const obj: any = {};
-    if (message.version !== 0) {
-      obj.version = Math.round(message.version);
-    }
     if (message.server !== undefined) {
       obj.server = ServerEndpoint.toJSON(message.server);
     }
@@ -96,7 +80,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.hysteria.ClientC
   },
   fromPartial(object: DeepPartial<ClientConfig>): ClientConfig {
     const message = createBaseClientConfig();
-    message.version = object.version ?? 0;
     message.server = (object.server !== undefined && object.server !== null)
       ? ServerEndpoint.fromPartial(object.server)
       : undefined;

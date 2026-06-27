@@ -48,14 +48,16 @@ export interface Config {
   xPaddingPlacement: string;
   xPaddingMethod: string;
   uplinkHTTPMethod: string;
-  sessionPlacement: string;
-  sessionKey: string;
+  sessionIDPlacement: string;
+  sessionIDKey: string;
   seqPlacement: string;
   seqKey: string;
   uplinkDataPlacement: string;
   uplinkDataKey: string;
   uplinkChunkSize: RangeConfig | undefined;
   serverMaxHeaderBytes: number;
+  sessionIDTable: string;
+  sessionIDLength: RangeConfig | undefined;
 }
 
 export interface Config_HeadersEntry {
@@ -330,14 +332,16 @@ function createBaseConfig(): Config {
     xPaddingPlacement: "",
     xPaddingMethod: "",
     uplinkHTTPMethod: "",
-    sessionPlacement: "",
-    sessionKey: "",
+    sessionIDPlacement: "",
+    sessionIDKey: "",
     seqPlacement: "",
     seqKey: "",
     uplinkDataPlacement: "",
     uplinkDataKey: "",
     uplinkChunkSize: undefined,
     serverMaxHeaderBytes: 0,
+    sessionIDTable: "",
+    sessionIDLength: undefined,
   };
 }
 
@@ -406,11 +410,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.uplinkHTTPMethod !== "") {
       writer.uint32(154).string(message.uplinkHTTPMethod);
     }
-    if (message.sessionPlacement !== "") {
-      writer.uint32(162).string(message.sessionPlacement);
+    if (message.sessionIDPlacement !== "") {
+      writer.uint32(162).string(message.sessionIDPlacement);
     }
-    if (message.sessionKey !== "") {
-      writer.uint32(170).string(message.sessionKey);
+    if (message.sessionIDKey !== "") {
+      writer.uint32(170).string(message.sessionIDKey);
     }
     if (message.seqPlacement !== "") {
       writer.uint32(178).string(message.seqPlacement);
@@ -429,6 +433,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     }
     if (message.serverMaxHeaderBytes !== 0) {
       writer.uint32(216).int32(message.serverMaxHeaderBytes);
+    }
+    if (message.sessionIDTable !== "") {
+      writer.uint32(226).string(message.sessionIDTable);
+    }
+    if (message.sessionIDLength !== undefined) {
+      RangeConfig.encode(message.sessionIDLength, writer.uint32(234).fork()).join();
     }
     return writer;
   },
@@ -600,7 +610,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
             break;
           }
 
-          message.sessionPlacement = reader.string();
+          message.sessionIDPlacement = reader.string();
           continue;
         }
         case 21: {
@@ -608,7 +618,7 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
             break;
           }
 
-          message.sessionKey = reader.string();
+          message.sessionIDKey = reader.string();
           continue;
         }
         case 22: {
@@ -659,6 +669,22 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
           message.serverMaxHeaderBytes = reader.int32();
           continue;
         }
+        case 28: {
+          if (tag !== 226) {
+            break;
+          }
+
+          message.sessionIDTable = reader.string();
+          continue;
+        }
+        case 29: {
+          if (tag !== 234) {
+            break;
+          }
+
+          message.sessionIDLength = RangeConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -704,14 +730,16 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
       xPaddingPlacement: isSet(object.xPaddingPlacement) ? globalThis.String(object.xPaddingPlacement) : "",
       xPaddingMethod: isSet(object.xPaddingMethod) ? globalThis.String(object.xPaddingMethod) : "",
       uplinkHTTPMethod: isSet(object.uplinkHTTPMethod) ? globalThis.String(object.uplinkHTTPMethod) : "",
-      sessionPlacement: isSet(object.sessionPlacement) ? globalThis.String(object.sessionPlacement) : "",
-      sessionKey: isSet(object.sessionKey) ? globalThis.String(object.sessionKey) : "",
+      sessionIDPlacement: isSet(object.sessionIDPlacement) ? globalThis.String(object.sessionIDPlacement) : "",
+      sessionIDKey: isSet(object.sessionIDKey) ? globalThis.String(object.sessionIDKey) : "",
       seqPlacement: isSet(object.seqPlacement) ? globalThis.String(object.seqPlacement) : "",
       seqKey: isSet(object.seqKey) ? globalThis.String(object.seqKey) : "",
       uplinkDataPlacement: isSet(object.uplinkDataPlacement) ? globalThis.String(object.uplinkDataPlacement) : "",
       uplinkDataKey: isSet(object.uplinkDataKey) ? globalThis.String(object.uplinkDataKey) : "",
       uplinkChunkSize: isSet(object.uplinkChunkSize) ? RangeConfig.fromJSON(object.uplinkChunkSize) : undefined,
       serverMaxHeaderBytes: isSet(object.serverMaxHeaderBytes) ? globalThis.Number(object.serverMaxHeaderBytes) : 0,
+      sessionIDTable: isSet(object.sessionIDTable) ? globalThis.String(object.sessionIDTable) : "",
+      sessionIDLength: isSet(object.sessionIDLength) ? RangeConfig.fromJSON(object.sessionIDLength) : undefined,
     };
   },
 
@@ -780,11 +808,11 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     if (message.uplinkHTTPMethod !== "") {
       obj.uplinkHTTPMethod = message.uplinkHTTPMethod;
     }
-    if (message.sessionPlacement !== "") {
-      obj.sessionPlacement = message.sessionPlacement;
+    if (message.sessionIDPlacement !== "") {
+      obj.sessionIDPlacement = message.sessionIDPlacement;
     }
-    if (message.sessionKey !== "") {
-      obj.sessionKey = message.sessionKey;
+    if (message.sessionIDKey !== "") {
+      obj.sessionIDKey = message.sessionIDKey;
     }
     if (message.seqPlacement !== "") {
       obj.seqPlacement = message.seqPlacement;
@@ -803,6 +831,12 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     }
     if (message.serverMaxHeaderBytes !== 0) {
       obj.serverMaxHeaderBytes = Math.round(message.serverMaxHeaderBytes);
+    }
+    if (message.sessionIDTable !== "") {
+      obj.sessionIDTable = message.sessionIDTable;
+    }
+    if (message.sessionIDLength !== undefined) {
+      obj.sessionIDLength = RangeConfig.toJSON(message.sessionIDLength);
     }
     return obj;
   },
@@ -851,8 +885,8 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
     message.xPaddingPlacement = object.xPaddingPlacement ?? "";
     message.xPaddingMethod = object.xPaddingMethod ?? "";
     message.uplinkHTTPMethod = object.uplinkHTTPMethod ?? "";
-    message.sessionPlacement = object.sessionPlacement ?? "";
-    message.sessionKey = object.sessionKey ?? "";
+    message.sessionIDPlacement = object.sessionIDPlacement ?? "";
+    message.sessionIDKey = object.sessionIDKey ?? "";
     message.seqPlacement = object.seqPlacement ?? "";
     message.seqKey = object.seqKey ?? "";
     message.uplinkDataPlacement = object.uplinkDataPlacement ?? "";
@@ -861,6 +895,10 @@ export const Config: MessageFns<Config, "xray.transport.internet.splithttp.Confi
       ? RangeConfig.fromPartial(object.uplinkChunkSize)
       : undefined;
     message.serverMaxHeaderBytes = object.serverMaxHeaderBytes ?? 0;
+    message.sessionIDTable = object.sessionIDTable ?? "";
+    message.sessionIDLength = (object.sessionIDLength !== undefined && object.sessionIDLength !== null)
+      ? RangeConfig.fromPartial(object.sessionIDLength)
+      : undefined;
     return message;
   },
 };

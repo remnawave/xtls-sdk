@@ -58,8 +58,6 @@ export interface ClientConfig {
   port: number;
   method: string;
   key: string;
-  udpOverTcp: boolean;
-  udpOverTcpVersion: number;
 }
 
 function createBaseServerConfig(): ServerConfig {
@@ -659,15 +657,7 @@ export const Account: MessageFns<Account, "xray.proxy.shadowsocks_2022.Account">
 messageTypeRegistry.set(Account.$type, Account);
 
 function createBaseClientConfig(): ClientConfig {
-  return {
-    $type: "xray.proxy.shadowsocks_2022.ClientConfig",
-    address: undefined,
-    port: 0,
-    method: "",
-    key: "",
-    udpOverTcp: false,
-    udpOverTcpVersion: 0,
-  };
+  return { $type: "xray.proxy.shadowsocks_2022.ClientConfig", address: undefined, port: 0, method: "", key: "" };
 }
 
 export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022.ClientConfig"> = {
@@ -685,12 +675,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022
     }
     if (message.key !== "") {
       writer.uint32(34).string(message.key);
-    }
-    if (message.udpOverTcp !== false) {
-      writer.uint32(40).bool(message.udpOverTcp);
-    }
-    if (message.udpOverTcpVersion !== 0) {
-      writer.uint32(48).uint32(message.udpOverTcpVersion);
     }
     return writer;
   },
@@ -734,22 +718,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022
           message.key = reader.string();
           continue;
         }
-        case 5: {
-          if (tag !== 40) {
-            break;
-          }
-
-          message.udpOverTcp = reader.bool();
-          continue;
-        }
-        case 6: {
-          if (tag !== 48) {
-            break;
-          }
-
-          message.udpOverTcpVersion = reader.uint32();
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -766,16 +734,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022
       port: isSet(object.port) ? globalThis.Number(object.port) : 0,
       method: isSet(object.method) ? globalThis.String(object.method) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
-      udpOverTcp: isSet(object.udpOverTcp)
-        ? globalThis.Boolean(object.udpOverTcp)
-        : isSet(object.udp_over_tcp)
-        ? globalThis.Boolean(object.udp_over_tcp)
-        : false,
-      udpOverTcpVersion: isSet(object.udpOverTcpVersion)
-        ? globalThis.Number(object.udpOverTcpVersion)
-        : isSet(object.udp_over_tcp_version)
-        ? globalThis.Number(object.udp_over_tcp_version)
-        : 0,
     };
   },
 
@@ -793,12 +751,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022
     if (message.key !== "") {
       obj.key = message.key;
     }
-    if (message.udpOverTcp !== false) {
-      obj.udpOverTcp = message.udpOverTcp;
-    }
-    if (message.udpOverTcpVersion !== 0) {
-      obj.udpOverTcpVersion = Math.round(message.udpOverTcpVersion);
-    }
     return obj;
   },
 
@@ -813,8 +765,6 @@ export const ClientConfig: MessageFns<ClientConfig, "xray.proxy.shadowsocks_2022
     message.port = object.port ?? 0;
     message.method = object.method ?? "";
     message.key = object.key ?? "";
-    message.udpOverTcp = object.udpOverTcp ?? false;
-    message.udpOverTcpVersion = object.udpOverTcpVersion ?? 0;
     return message;
   },
 };

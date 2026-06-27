@@ -1,5 +1,23 @@
 import { createClient, Channel } from 'nice-grpc';
 
+import { HANDLER_ERRORS } from '../common/errors';
+import { ISdkResponse } from '../common/types/sdk-response';
+import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
+import {
+    AddUserOperation,
+    HandlerServiceClient,
+    HandlerServiceDefinition,
+    RemoveUserOperation,
+} from '../xray-protos/app/proxyman/command/command';
+import { User } from '../xray-protos/common/protocol/user';
+import { Account as HttpAccount } from '../xray-protos/proxy/http/config';
+import { Account as HysteriaAccount } from '../xray-protos/proxy/hysteria/account/config';
+import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
+import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
+import { Account as SocksAccount } from '../xray-protos/proxy/socks/config';
+import { Account as TrojanAccount } from '../xray-protos/proxy/trojan/config';
+import { Account as VlessAccount } from '../xray-protos/proxy/vless/account';
+import { PeerConfig as WireguardPeerConfig } from '../xray-protos/proxy/wireguard/config';
 import {
     IAddHttpUser,
     IAddHysteriaUser,
@@ -8,29 +26,13 @@ import {
     IAddSocksUser,
     IAddTrojanUser,
     IAddVlessUser,
+    IAddWireguardUser,
 } from './interfaces';
-import {
-    AddUserOperation,
-    HandlerServiceClient,
-    HandlerServiceDefinition,
-    RemoveUserOperation,
-} from '../xray-protos/app/proxyman/command/command';
 import {
     AddUserResponseModel,
     GetInboundUsersResponseModel,
     RemoveUserResponseModel,
 } from './models';
-import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
-import createTypedMessage from '../common/utils/create-typed-message/create-typed-message';
-import { Account as HysteriaAccount } from '../xray-protos/proxy/hysteria/account/config';
-import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
-import { Account as TrojanAccount } from '../xray-protos/proxy/trojan/config';
-import { Account as VlessAccount } from '../xray-protos/proxy/vless/account';
-import { Account as SocksAccount } from '../xray-protos/proxy/socks/config';
-import { Account as HttpAccount } from '../xray-protos/proxy/http/config';
-import { ISdkResponse } from '../common/types/sdk-response';
-import { User } from '../xray-protos/common/protocol/user';
-import { HANDLER_ERRORS } from '../common/errors';
 
 /**
  * Service for managing Xray inbound handlers and their users
@@ -298,6 +300,56 @@ export class HandlerService {
                         account: createTypedMessage(SocksAccount, {
                             username: data.socks_username,
                             password: data.socks_password,
+                        }),
+                    }),
+                }),
+            });
+
+            return {
+                isOk: true,
+                data: new AddUserResponseModel(true),
+            };
+        } catch (error) {
+            let message = '';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+
+            if (message.includes('already exists')) {
+                return {
+                    isOk: true,
+                    data: new AddUserResponseModel(false),
+                };
+            }
+
+            return {
+                isOk: false,
+                ...HANDLER_ERRORS.ADD_USER_ERROR(message),
+            };
+        }
+    }
+
+    /**
+     * Adds a new Wireguard user to a specified inbound handler.
+     *
+     * @param {IAddWireguardUser} data - The user data containing tag, username, public key, allowed IPs and level
+     * @returns {Promise<ISdkResponse<AddUserResponseModel>>} A promise that resolves to:
+     * - On success: An object with `isOk: true` and `data.success` indicating if user was added
+     * - On failure: An object with `isOk: false` and error details from HANDLER_ERRORS
+     */
+    public async addWireguardUser(
+        data: IAddWireguardUser,
+    ): Promise<ISdkResponse<AddUserResponseModel>> {
+        try {
+            await this.client.alterInbound({
+                tag: data.tag,
+                operation: createTypedMessage(AddUserOperation, {
+                    user: User.create({
+                        email: data.username,
+                        level: data.level,
+                        account: createTypedMessage(WireguardPeerConfig, {
+                            publicKey: data.publicKey,
+                            allowedIps: data.allowedIps,
                         }),
                     }),
                 }),
