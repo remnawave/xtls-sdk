@@ -1,5 +1,11 @@
 import { Channel, ClientError, Status, createClient } from 'nice-grpc';
 
+import { STATS_ERRORS } from '../common/errors';
+import { ISdkResponse } from '../common/types';
+import {
+    StatsServiceDefinition,
+    StatsServiceClient,
+} from '../xray-protos/app/stats/command/command';
 import {
     GetAllUsersStatsResponseModel,
     GetUserStatsResponseModel,
@@ -12,12 +18,6 @@ import {
     GetUsersStatsResponseModel,
     UserStat,
 } from './models';
-import {
-    StatsServiceDefinition,
-    StatsServiceClient,
-} from '../xray-protos/app/stats/command/command';
-import { STATS_ERRORS } from '../common/errors';
-import { ISdkResponse } from '../common/types';
 
 /**
  * Service class for interacting with Xray server statistics.
@@ -526,7 +526,7 @@ export class StatsService {
                 email: metricName.slice('user>>>'.length, -'>>>online'.length),
             }));
 
-            const results: UserStat[] = new Array(onlinePairs.length);
+            const results: UserStat[] = Array.from({ length: onlinePairs.length });
             const concurrency = Math.min(50, onlinePairs.length);
             let cursor = 0;
 

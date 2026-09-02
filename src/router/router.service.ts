@@ -1,13 +1,13 @@
 import { Channel, createClient } from 'nice-grpc';
 
+import { ROUTER_ERRORS } from '../common/errors/router/router.errors';
+import { ISdkResponse } from '../common/types/sdk-response';
 import {
     RoutingServiceClient,
     RoutingServiceDefinition,
 } from '../xray-protos/app/router/command/command';
-import { ROUTER_ERRORS } from '../common/errors/router/router.errors';
-import { RemoveRuleByRuleTagResponseModel } from './models';
-import { ISdkResponse } from '../common/types/sdk-response';
 import { IRemoveRuleByRuleTag } from './interfaces';
+import { RemoveRuleByRuleTagResponseModel } from './models';
 
 /**
  * Service for managing routing rules in XRAY/XTLS

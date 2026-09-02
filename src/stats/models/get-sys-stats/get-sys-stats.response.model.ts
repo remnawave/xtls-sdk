@@ -1,5 +1,6 @@
-import { SysStatsResponse } from '../../../xray-protos/app/stats/command/command';
 import Long from 'long';
+
+import { SysStatsResponse } from '../../../xray-protos/app/stats/command/command';
 
 export class GetSysStatsResponseModel {
     public readonly numGoroutine: number;
