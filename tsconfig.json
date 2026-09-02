@@ -10,22 +10,15 @@
     "strictPropertyInitialization": false,
     "skipLibCheck": true,
     "noEmit": false,
-    "lib": [
-      "es2020"
-    ],
+    "lib": ["es2020"],
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": true
   },
   "exclude": [
     "scripts/**/*",
     "tests/**/*",
     "**/*.spec.ts",
     "**/*.test.ts",
-    "src/xray-protos/transport/**/*.ts",
-    "src/xray-protos/core/**/*.ts",
-    "src/xray-protos/app/router/**/*.ts",
-    "src/xray-protos/app/observatory/**/*.ts",
-    "src/xray-protos/app/dns/**/*.ts",
     "build/**/*",
     "node_modules/**/*"
   ]

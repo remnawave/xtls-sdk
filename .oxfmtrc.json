@@ -41,16 +41,6 @@
       ["type-parent", "type-sibling", "type-index"],
       ["value-parent", "value-sibling", "value-index"],
       "unknown"
-    ],
-    "customGroups": [
-      { "groupName": "nestJs", "elementNamePattern": ["@nestjs/**"] },
-      { "groupName": "remnawave", "elementNamePattern": ["@remnawave/**"] },
-      { "groupName": "aliasCommon", "elementNamePattern": ["@common/**"] },
-      { "groupName": "aliasLibs", "elementNamePattern": ["@libs/**"] },
-      { "groupName": "aliasIntegrationModules", "elementNamePattern": ["@integration-modules/**"] },
-      { "groupName": "aliasModules", "elementNamePattern": ["@modules/**"] },
-      { "groupName": "aliasScheduler", "elementNamePattern": ["@scheduler/**"] },
-      { "groupName": "aliasQueue", "elementNamePattern": ["@queue/**"] }
     ]
   }
 }

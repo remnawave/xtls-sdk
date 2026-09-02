@@ -35,22 +35,28 @@
   "types": "build/index.d.ts",
   "scripts": {
     "prepublish": "rm -rf build && tsc",
-    "build": "tsc"
+    "build": "tsc",
+    "format": "oxfmt --check",
+    "format:fix": "oxfmt",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "check": "oxfmt --check && oxlint",
+    "fix": "oxfmt && oxlint --fix"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.12.1",
+    "@bufbuild/protobuf": "^2.14.1",
     "long": "^5.3.2",
-    "nice-grpc": "^2.1.16",
-    "protobufjs": "^8.6.5"
+    "nice-grpc": "^2.1.17",
+    "protobufjs": "^8.8.0"
   },
   "devDependencies": {
     "@types/node": ">= 24 < 25",
-    "eslint-plugin-perfectionist": "5.9.1",
+    "eslint-plugin-perfectionist": "5.11.0",
     "grpc-tools": "^1.13.1",
-    "oxfmt": "^0.56.0",
-    "oxlint": "^1.71.0",
-    "tar": "^7.5.17",
-    "ts-proto": "^2.11.8",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
+    "tar": "^7.5.22",
+    "ts-proto": "^2.12.1",
     "typescript": "~5.9.3"
   }
 }
