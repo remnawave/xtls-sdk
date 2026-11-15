@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import { promisify } from 'node:util';
 import * as tar from 'tar';
 
-const VERSION = '26.7.28';
+const VERSION = '26.11.9';
 const TEMP_DIR = path.join(__dirname, 'temp-xray-core');
 
 const SOURCE = process.argv[2] || 'tag';

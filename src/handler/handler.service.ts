@@ -12,6 +12,7 @@ import {
 import { User } from '../xray-protos/common/protocol/user';
 import { Account as HttpAccount } from '../xray-protos/proxy/http/config';
 import { Account as HysteriaAccount } from '../xray-protos/proxy/hysteria/account/config';
+import { Account as MasqueAccount } from '../xray-protos/proxy/masque/config';
 import { Account as ShadowsocksAccount } from '../xray-protos/proxy/shadowsocks/config';
 import { Account as Shadowsocks2022Account } from '../xray-protos/proxy/shadowsocks_2022/config';
 import { Account as SocksAccount } from '../xray-protos/proxy/socks/config';
@@ -27,6 +28,7 @@ import {
     IAddTrojanUser,
     IAddVlessUser,
     IAddWireguardUser,
+    IAddMasqueUser,
 } from './interfaces';
 import {
     AddUserResponseModel,
@@ -152,6 +154,53 @@ export class HandlerService {
                             id: data.uuid,
                             flow: data.flow,
                             encryption: 'none',
+                        }),
+                    }),
+                }),
+            });
+
+            return {
+                isOk: true,
+                data: new AddUserResponseModel(true),
+            };
+        } catch (error) {
+            let message = '';
+            if (error instanceof Error) {
+                message = error.message;
+            }
+
+            if (message.includes('already exists')) {
+                return {
+                    isOk: true,
+                    data: new AddUserResponseModel(false),
+                };
+            }
+
+            return {
+                isOk: false,
+                ...HANDLER_ERRORS.ADD_USER_ERROR(message),
+            };
+        }
+    }
+
+    /**
+     * Adds a new Masque user to a specified inbound handler.
+     *
+     * @param {IAddMasqueUser} data - The user data containing tag, username, password and level
+     * @returns {Promise<ISdkResponse<AddUserResponseModel>>} A promise that resolves to:
+     * - On success: An object with `isOk: true` and `data.success` indicating if user was added
+     * - On failure: An object with `isOk: false` and error details from HANDLER_ERRORS
+     */
+    public async addMasqueUser(data: IAddMasqueUser): Promise<ISdkResponse<AddUserResponseModel>> {
+        try {
+            await this.client.alterInbound({
+                tag: data.tag,
+                operation: createTypedMessage(AddUserOperation, {
+                    user: User.create({
+                        email: data.username,
+                        level: data.level,
+                        account: createTypedMessage(MasqueAccount, {
+                            password: data.password,
                         }),
                     }),
                 }),

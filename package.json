@@ -1,6 +1,6 @@
 {
   "name": "@remnawave/xtls-sdk",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "A Typescript SDK for XRAY (XTLS) Core GRPC Api",
   "keywords": [
     "api",
@@ -44,19 +44,18 @@
     "fix": "oxfmt && oxlint --fix"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.14.1",
+    "@bufbuild/protobuf": "^2.17.0",
     "long": "^5.3.2",
-    "nice-grpc": "^2.1.17",
-    "protobufjs": "^8.8.0"
+    "nice-grpc": "^2.1.18",
+    "protobufjs": "^8.8.1"
   },
   "devDependencies": {
     "@types/node": ">= 24 < 25",
-    "eslint-plugin-perfectionist": "5.11.0",
     "grpc-tools": "^1.13.1",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
-    "tar": "^7.5.22",
-    "ts-proto": "^2.12.1",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "tar": "^7.5.23",
+    "ts-proto": "^2.22.0",
     "typescript": "~5.9.3"
   }
 }
